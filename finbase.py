@@ -6,26 +6,39 @@ db = orm.Database()
 
 class Feed(db.Entity):
     id = orm.PrimaryKey(int, auto=True)
-    title = orm.Required(str)
-    url = orm.Required(str)
-    updated = orm.Optional(datetime)
-    queried = orm.Optional(datetime)
     articles = orm.Set('Article')
     categories = orm.Set('Category')
+    title = orm.Required(str)
+    url = orm.Required(str)
+    etag = orm.Optional(str)
+    modified = orm.Optional(str)
+
 
 class Article(db.Entity):
     id = orm.PrimaryKey(int, auto=True)
     feed = orm.Required('Feed')
+    authors = orm.Set('Author')
+    tags = orm.Set('Tag')
     title = orm.Required(str)
     url = orm.Required(str)
+    read = orm.Required(bool, default=False)
     published = orm.Optional(datetime)
-    updated = orm.Optional(datetime)
-    read = orm.Optional(bool)
+    summary = orm.Optional(str)
 
 class Category(db.Entity):
     id = orm.PrimaryKey(int, auto=True)
     title = orm.Required(str, unique=True)
     feeds = orm.Set('Feed')
+
+class Tag(db.Entity):
+    id = orm.PrimaryKey(int, auto=True)
+    label = orm.Required(str, unique=True)
+    articles = orm.Set('Article')
+
+class Author(db.Entity):
+    id = orm.PrimaryKey(int, auto=True)
+    name = orm.Required(str, unique=True)
+    articles = orm.Set('Article')
 
 def setup():
     orm.sql_debug(True)
