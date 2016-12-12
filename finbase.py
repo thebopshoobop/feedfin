@@ -32,27 +32,16 @@ def setup():
     db.bind('sqlite', 'fbdb.sqlite', create_db=True)
     db.generate_mapping(create_tables=True)
 
-@orm.db_session
-def add_feed(url, title='', categories=None):
+def add_feed(url, title=''):
     if not title:
         p = feedparser.parse(url)
-        if 'title' in p.feed:
-            title = p.feed.title
-        else:
-            title = url
+        title = p.feed.title if 'title' in p.feed else url
 
-    if categories:
-        new_feed = Feed(title=title, url=url, categories=categories)
-    else:
+    with orm.db_session:
         new_feed = Feed(title=title, url=url)
+        return new_feed.id
 
-    return new_feed
-
-@orm.db_session
-def add_category(title, feeds=None):
-    if feeds:
-        new_category = Category(title=title, feeds=feeds)
-    else:
+def add_category(title):
+    with orm.db_session:
         new_category = Category(title=title)
-
-    return new_category
+        return new_category.id
