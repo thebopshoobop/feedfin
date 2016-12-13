@@ -9,7 +9,7 @@ class Feed(db.Entity):
     articles = orm.Set('Article')
     categories = orm.Set('Category')
     title = orm.Required(str)
-    url = orm.Required(str)
+    url = orm.Required(str, unique=True)
     etag = orm.Optional(str)
     modified = orm.Optional(str)
 
@@ -20,7 +20,7 @@ class Article(db.Entity):
     authors = orm.Set('Author')
     tags = orm.Set('Tag')
     title = orm.Required(str)
-    url = orm.Required(str)
+    url = orm.Required(str, unique=True)
     read = orm.Required(bool, default=False)
     published = orm.Optional(datetime)
     summary = orm.Optional(str)
@@ -45,16 +45,59 @@ def setup():
     db.bind('sqlite', 'fbdb.sqlite', create_db=True)
     db.generate_mapping(create_tables=True)
 
-def add_feed(url, title=''):
-    if not title:
-        p = feedparser.parse(url)
-        title = p.feed.title if 'title' in p.feed else url
 
-    with orm.db_session:
+@orm.db_session
+def add_feed(url):
+    exists = Feed.get(url=url)
+    if exists:
+        return exists.id
+    else:
         new_feed = Feed(title=title, url=url)
+        commit()
         return new_feed.id
 
+@orm.db_session
+def del_feed(id):
+    Feed[id].delete()
+
+@orm.db_session
 def add_category(title):
-    with orm.db_session:
+    exists = Category.get(title=title)
+    if exists:
+        return exists.id
+    else:
         new_category = Category(title=title)
+        commit()
         return new_category.id
+
+@orm.db_session
+def del_category(id):
+    Category[id].delete()
+
+@orm.db_session
+def add_tag(label):
+    exists = Tag.get(label=label)
+    if exists:
+        return exists.id
+    else:
+        new_tag = Tag(label=label)
+        commit()
+        return new_tag.id
+
+@orm.db_session
+def del_tag(id):
+    Tag[id].delete()
+
+@orm.db_session
+def add_author(name):
+    exists=Author.get(name)
+    if exists:
+        return exists.id
+    else:
+        new_author = Author(name=name)
+        commit()
+        return new_author.id
+
+@orm.db_session
+def del_author(id):
+    Author[id].delete()
