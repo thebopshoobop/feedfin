@@ -60,7 +60,7 @@ def fetch_feed(id):
         tags = [Tag[add_tag(t.term)] for t in e.tags] if 'tags' in e else Tag[add_tag('none')]
         title = e.title if 'title' in e else ''
         url = e.link if 'link' in e else feed.url
-        published = datetime(*e.published_parsed[:6]) if 'published_parsed' in e else datetime.now()
+        published = datetime(*e.published_parsed[:6]) if 'published_parsed' in e else datetime.utcnow()
         summary = e.summary if 'summary' in e else ''
         a = Article.get(url=url)
         if a:
