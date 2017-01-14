@@ -137,15 +137,16 @@ def del_author(id):
     Author[id].delete()
 
 @app.route('/feeds')
-@app.route('/feeds/<int:id>')
 @orm.db_session
-def feeds(id=-1):
-    if id < 0:
-        feeds = orm.select(f for f in Feed)[:]
-        return render_template('feeds.html', feeds=feeds)
-    else:
-        try:
-            feed = Feed[id]
-            return render_template('feed.html', feed=feed)
-        except orm.ObjectNotFound:
-            return render_template('missing.html', entity='Feed', id=id)
+def feeds():
+    feeds = orm.select(f for f in Feed)[:]
+    return render_template('feeds.html', feeds=feeds)
+
+@app.route('/feed/<int:id>')
+@orm.db_session
+def feed(id):
+    try:
+        feed = Feed[id]
+        return render_template('feed.html', feed=feed)
+    except orm.ObjectNotFound:
+        return render_template('missing.html', entity='Feed', id=id)
