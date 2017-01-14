@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>{{ feed.title }}</title>
+</head>
+<body>
+    <h1>{{ feed.title }}</h1>
+    <ul>
+    {% for article in feed.articles %}
+        <li><a href="{{ article.url }}">{{ article.title }}</a></li>
+    {% endfor %}
+    </ul>
+</body>
+</html>

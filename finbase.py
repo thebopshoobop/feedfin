@@ -7,7 +7,7 @@ from flask import render_template
 db = orm.Database()
 orm.sql_debug(True)
 db.bind('sqlite', 'fbdb.sqlite', create_db=True)
-db.generate_mapping(create_tables=True)
+
 app = Flask(__name__)
 
 class Feed(db.Entity):
@@ -44,6 +44,8 @@ class Author(db.Entity):
     id = orm.PrimaryKey(int, auto=True)
     name = orm.Required(str, unique=True)
     articles = orm.Set('Article')
+
+db.generate_mapping(create_tables=True)
 
 @orm.db_session
 def fetch_all_feeds():
@@ -135,7 +137,15 @@ def del_author(id):
     Author[id].delete()
 
 @app.route('/feeds')
-def feeds():
-    with orm.db_session:
+@app.route('/feeds/<int:id>')
+@orm.db_session
+def feeds(id=-1):
+    if id < 0:
         feeds = orm.select(f for f in Feed)[:]
-    return render_template('feeds.html', feeds=feeds)
+        return render_template('feeds.html', feeds=feeds)
+    else:
+        try:
+            feed = Feed[id]
+            return render_template('feed.html', feed=feed)
+        except orm.ObjectNotFound:
+            return render_template('missing.html', entity='Feed', id=id)
