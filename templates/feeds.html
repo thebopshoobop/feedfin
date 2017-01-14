@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Feeds</title>
+</head>
+<body>
+    <ul>
+    {% for feed in feeds %}
+        <li><a href="{{ feed.url }}">{{ feed.title }}</a></li>
+    {% endfor %}
+    </ul>
+</body>
+</html>

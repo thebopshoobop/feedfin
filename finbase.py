@@ -1,8 +1,14 @@
 from pony import orm
 from datetime import datetime
 import feedparser
+from flask import Flask
+from flask import render_template
 
 db = orm.Database()
+orm.sql_debug(True)
+db.bind('sqlite', 'fbdb.sqlite', create_db=True)
+db.generate_mapping(create_tables=True)
+app = Flask(__name__)
 
 class Feed(db.Entity):
     id = orm.PrimaryKey(int, auto=True)
@@ -38,11 +44,6 @@ class Author(db.Entity):
     id = orm.PrimaryKey(int, auto=True)
     name = orm.Required(str, unique=True)
     articles = orm.Set('Article')
-
-def setup():
-    orm.sql_debug(True)
-    db.bind('sqlite', 'fbdb.sqlite', create_db=True)
-    db.generate_mapping(create_tables=True)
 
 @orm.db_session
 def fetch_all_feeds():
@@ -132,3 +133,9 @@ def add_author(name):
 @orm.db_session
 def del_author(id):
     Author[id].delete()
+
+@app.route('/feeds')
+def feeds():
+    with orm.db_session:
+        feeds = orm.select(f for f in Feed)[:]
+    return render_template('feeds.html', feeds=feeds)
