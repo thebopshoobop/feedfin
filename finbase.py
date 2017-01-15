@@ -1,8 +1,7 @@
 from pony import orm
 from datetime import datetime
 import feedparser
-from flask import Flask
-from flask import render_template
+from flask import Flask, render_template, request, redirect, url_for
 
 db = orm.Database()
 orm.sql_debug(True)
@@ -16,19 +15,19 @@ class Feed(db.Entity):
     categories = orm.Set('Category')
     title = orm.Required(str)
     url = orm.Required(str, unique=True)
-    etag = orm.Required(str)
-    modified = orm.Required(str)
+    etag = orm.Optional(str)
+    modified = orm.Optional(str)
 
 class Article(db.Entity):
     id = orm.PrimaryKey(int, auto=True)
     feed = orm.Required('Feed')
-    author = orm.Required('Author')
+    author = orm.Optional('Author')
     tags = orm.Set('Tag')
     title = orm.Required(str)
     url = orm.Required(str, unique=True)
-    read = orm.Required(bool, default=False)
+    read = orm.Optional(bool, default=False)
     published = orm.Required(datetime)
-    summary = orm.Required(str)
+    summary = orm.Optional(str)
 
 class Category(db.Entity):
     id = orm.PrimaryKey(int, auto=True)
@@ -141,9 +140,12 @@ def format_datetime(value, format='full'):
     formats = {'full': '%m/%d/%Y %I:%M%p', 'date': '%m/%d/%Y', 'time': '%I:%M%p'}
     return value.strftime(formats[format])
 
-@app.route('/feeds')
+@app.route('/feeds', methods=['GET', 'POST'])
 @orm.db_session
 def feeds():
+    if request.method == 'POST':
+        add_feed(request.form['url'])
+
     feeds = orm.select(f for f in Feed)[:]
     return render_template('feeds.html', feeds=feeds)
 
@@ -153,6 +155,16 @@ def feed(id):
     try:
         feed = Feed[id]
         articles = list(reversed([a.to_dict(with_collections=True, related_objects=True) for a in feed.articles.order_by(Article.published)]))
-        return render_template('feed.html', feed=feed.to_dict(), articles=articles)
+        return render_template('feed.html', title=feed.title, id=feed.id, articles=articles)
     except orm.ObjectNotFound:
         return render_template('missing.html', entity='Feed', id=id)
+
+@app.route('/fetch/<int:id>')
+def fetch(id):
+    fetch_feed(id)
+    return redirect(url_for('feed', id=id))
+
+@app.route('/fetch_all')
+def fetch_all():
+    fetch_all_feeds()
+    return redirect(url_for('feeds'))

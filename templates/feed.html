@@ -1,15 +1,16 @@
-`<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>{{ feed.title }}</title>
+    <title>{{ title }}</title>
 </head>
 <body>
-    <h1>{{ feed.title }}</h1>
+    <h1>{{ title }}</h1>
+    <a href="/fetch/{{ id }}">Fetch Feed</a> <a href="/feeds">All Feeds</a>
     <ul>
     {% for article in articles %}
         <li><a href="{{ article.url }}" target="_blank">{{ article.title }}</a></li>
         <ul>
-            {% if article.summary %}<li>{{ article.summary }}</li>{% endif %}
+            {% if article.summary %}<li>{{ article.summary|safe }}</li>{% endif %}
             {% if article.tags[0].label != 'none' %}<li>Tags: {% for tag in article.tags %} |{{ tag.label }}| {% endfor %}</li>{% endif %}
             <li>Published: {{ article.published | datetime }}</li>
             {% if article.author.name != 'none' %}<li>Author: {{ article.author.name }}</li>{% endif %}

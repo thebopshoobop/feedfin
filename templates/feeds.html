@@ -4,10 +4,16 @@
     <title>Feeds</title>
 </head>
 <body>
+    <h1>Feeds</h1>
+    <a href="/fetch_all">Fetch All Feeds</a>
     <ul>
     {% for feed in feeds %}
         <li><a href="/feed/{{ feed.id }}">{{ feed.title }}</a></li>
     {% endfor %}
     </ul>
+    <h3>Add Feed</h3>
+    <form method="post">
+        <input type="text" name="url"> <input type="submit" value="Add">
+    </form>
 </body>
 </html>
