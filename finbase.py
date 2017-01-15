@@ -4,7 +4,7 @@ import feedparser
 from flask import Flask, render_template, request, redirect, url_for
 
 db = orm.Database()
-orm.sql_debug(True)
+#orm.sql_debug(True)
 db.bind('sqlite', 'fbdb.sqlite', create_db=True)
 
 app = Flask(__name__)
@@ -32,7 +32,7 @@ class Article(db.Entity):
 class Category(db.Entity):
     id = orm.PrimaryKey(int, auto=True)
     title = orm.Required(str, unique=True)
-    feeds = orm.Optional('Feed')
+    feeds = orm.Set('Feed')
 
 class Tag(db.Entity):
     id = orm.PrimaryKey(int, auto=True)
@@ -93,10 +93,17 @@ def format_datetime(value, format='full'):
     formats = {'full': '%m/%d/%Y %I:%M%p', 'date': '%m/%d/%Y', 'time': '%I:%M%p'}
     return value.strftime(formats[format])
 
-@app.route('/', methods=['GET', 'POST'])
+@app.route('/')
 @orm.db_session
 def feeds():
-    if request.method == 'POST':
+    uncategorized = list(Feed.select(lambda u: not u.categories))
+    categories = list(Category.select())
+    return render_template('feeds.html', uncategorized=uncategorized, categories=categories)
+
+@app.route('/add_feed', methods=['POST'])
+@orm.db_session
+def add_feed():
+    if request.form['url']:
         url = request.form['url']
         new_feed = Feed.get(url=url)
         if not new_feed:
@@ -104,8 +111,7 @@ def feeds():
             title = p.feed.title if 'title' in p.feed else url
             new_feed = Feed(title=title, url=url)
 
-    feeds = orm.select(f for f in Feed)[:]
-    return render_template('feeds.html', feeds=feeds)
+    return redirect(url_for('feeds'))
 
 @app.route('/del_feed/<int:id>')
 @orm.db_session
@@ -115,6 +121,69 @@ def del_feed(id):
         return redirect(url_for('feeds'))
     except orm.ObjectNotFound:
         return render_template('missing.html', entity='Feed', id=id)
+
+@app.route('/edit_feed/<int:id>', methods=['GET', 'POST'])
+@orm.db_session
+def edit_feed(id):
+    try:
+        feed = Feed[id]
+        if request.method == 'POST' and request.form['submit'] == 'Save':
+            feed.title = request.form['title']
+            feed.url = request.form['url']
+            old = set(c.id for c in feed.categories)
+            new = set(request.form.getlist('category'))
+            if  new != old:
+                feed.categories.clear()
+                [feed.categories.add(Category[c]) for c in new]
+        elif request.method == 'POST' and request.form['submit'] == 'Delete':
+            return redirect(url_for('del_feed', id=id))
+
+        other_categories = list(orm.select(c for c in Category if c not in feed.categories))
+        return render_template('edit_feed.html', feed=feed, other_categories=other_categories)
+
+    except orm.ObjectNotFound:
+        return render_template('missing.html', entity='Feed', id=id)
+
+@app.route('/add_category', methods=['POST'])
+@orm.db_session
+def add_category():
+    if request.form['category']:
+        title = request.form['category']
+        new_category = Category.get(title=title)
+        if not new_category:
+            new_category = Category(title=title)
+
+    return redirect(url_for('feeds'))
+
+
+@app.route('/del_category/<int:id>')
+@orm.db_session
+def del_category(id):
+    try:
+        Category[id].delete()
+        return redirect(url_for('feeds'))
+    except orm.ObjectNotFound:
+        return render_template('missing.html', entity='Category', id=id)
+
+@app.route('/edit_category/<int:id>', methods=['GET', 'POST'])
+@orm.db_session
+def edit_category(id):
+    try:
+        category = Category[id]
+        if request.method == 'POST' and request.form['submit'] == 'Save':
+            category.title = request.form['title']
+            old = set(f.id for f in category.feeds)
+            new = set(request.form.getlist('feed'))
+            if  new != old:
+                category.feeds.clear()
+                [category.feeds.add(Feed[f]) for f in new]
+        elif request.method == 'POST' and request.form['submit'] == 'Delete':
+            return redirect(url_for('del_category', id=id))
+
+        other_feeds = list(orm.select(f for f in Feed if f not in category.feeds))
+        return render_template('edit_category.html', category=category, other_feeds=other_feeds)
+    except orm.ObjectNotFound:
+        return render_template('missing.html', entity='Category', id=id)
 
 @app.route('/feed/<int:id>')
 @orm.db_session

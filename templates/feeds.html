@@ -7,13 +7,30 @@
     <h1>Feeds</h1>
     <a href="{{ url_for('fetch_all') }}">Fetch All Feeds</a>
     <ul>
-    {% for feed in feeds %}
-        <li><a href="{{ url_for('feed', id=feed.id) }}">{{ feed.title }}</a> <a href="{{ url_for('del_feed', id=feed.id) }}"><button>Delete</button></a></li>
+        <h3>Uncategorized</h3>
+        <ul>
+        {% for feed in uncategorized %}
+            <li><a href="{{ url_for('feed', id=feed.id) }}">{{ feed.title }}</a> <a href="{{ url_for('edit_feed', id=feed.id) }}"><em>Edit Feed</em></a></li>
+        {% endfor %}
+        </ul>
+    {% for category in categories %}
+        <h3>{{ category.title }}</h3> <a href="{{ url_for('edit_category', id=category.id) }}"><em>Edit Category</em></a></li>
+        <ul>
+        {% if category.feeds %}
+        {% for feed in category.feeds %}
+            <li><a href="{{ url_for('feed', id=feed.id) }}">{{ feed.title }}</a> <a href="{{ url_for('edit_feed', id=feed.id) }}"><em>Edit Feed</em></a></li>
+        {% endfor %}
+        {% endif %}
+        </ul>
     {% endfor %}
     </ul>
     <h3>Add Feed</h3>
-    <form method="post">
+    <form method="POST" action="{{ url_for('add_feed') }}">
         <input type="text" name="url"> <input type="submit" value="Add">
+    </form>
+    <h3>Add Category</h3>
+    <form method="POST" action="{{ url_for('add_category') }}">
+        <input type="text" name="category"> <input type="submit" value="Add">
     </form>
 </body>
 </html>

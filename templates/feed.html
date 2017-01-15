@@ -5,15 +5,15 @@
 </head>
 <body>
     <h1>{{ title }}</h1>
-    <a href="{{ url_for('fetch', id=id) }}">Fetch Feed</a> <a href="{{ url_for('feeds') }}">All Feeds</a>
+    <a href="{{ url_for('edit_feed', id=id) }}">Edit Feed</a> <a href="{{ url_for('fetch', id=id) }}">Fetch Feed</a> <a href="{{ url_for('feeds') }}">All Feeds</a>
     <ul>
     {% for article in articles %}
         <li><a href="{{ article.url }}" target="_blank">{{ article.title }}</a></li>
         <ul>
             {% if article.summary %}<li>{{ article.summary|safe }}</li>{% endif %}
-            {% if article.tags[0].label != 'none' %}<li>Tags: {% for tag in article.tags %} |{{ tag.label }}| {% endfor %}</li>{% endif %}
+            {% if article.tags[0].label != "none" %}<li>Tags: {% for tag in article.tags %} |{{ tag.label }}| {% endfor %}</li>{% endif %}
             <li>Published: {{ article.published | datetime }}</li>
-            {% if article.author.name != 'none' %}<li>Author: {{ article.author.name }}</li>{% endif %}
+            {% if article.author.name != "none" %}<li>Author: {{ article.author.name }}</li>{% endif %}
         </ul>
     {% endfor %}
     </ul>
