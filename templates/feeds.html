@@ -5,10 +5,10 @@
 </head>
 <body>
     <h1>Feeds</h1>
-    <a href="/fetch_all">Fetch All Feeds</a>
+    <a href="{{ url_for('fetch_all') }}">Fetch All Feeds</a>
     <ul>
     {% for feed in feeds %}
-        <li><a href="/feed/{{ feed.id }}">{{ feed.title }}</a></li>
+        <li><a href="{{ url_for('feed', id=feed.id) }}">{{ feed.title }}</a> <a href="{{ url_for('del_feed', id=feed.id) }}"><button>Delete</button></a></li>
     {% endfor %}
     </ul>
     <h3>Add Feed</h3>

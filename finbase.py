@@ -47,53 +47,6 @@ class Author(db.Entity):
 db.generate_mapping(create_tables=True)
 
 @orm.db_session
-def fetch_all_feeds():
-    for feed_id in orm.select(f.id for f in Feed):
-        fetch_feed(feed_id)
-
-@orm.db_session
-def fetch_feed(id):
-    feed = Feed[id]
-    p = feedparser.parse(feed.url, etag=feed.etag, modified=feed.modified)
-    feed.etag = p.etag if 'etag' in p else ''
-    feed.modified = p.modified if 'modified' in p else ''
-    for e in p.entries if 'entries' in p else []:
-        author = Author[add_author(e.author)] if 'author' in e and e.author else Author[add_author('none')]
-        tags = [Tag[add_tag(t.term)] for t in e.tags] if 'tags' in e else Tag[add_tag('none')]
-        title = e.title if 'title' in e else ''
-        url = e.link if 'link' in e else feed.url
-        published = datetime(*e.published_parsed[:6]) if 'published_parsed' in e else datetime.utcnow()
-        summary = e.summary if 'summary' in e else ''
-        a = Article.get(url=url)
-        if a:
-            if a.published != published:
-                a.feed = feed
-                a.author = author
-                a.tags = tags
-                a.title = title
-                a.published = published
-                a.summary = summary
-        else:
-            new_article = Article(feed=feed, author=author, tags=tags, title=title, url=url, published=published, summary=summary)
-
-def add_feed(url, title=''):
-    if not title:
-        p = feedparser.parse(url)
-        title = p.feed.title if 'title' in p.feed else url
-    with orm.db_session:
-        exists = Feed.get(url=url)
-        if exists:
-            return exists.id
-        else:
-            new_feed = Feed(title=title, url=url)
-            orm.commit()
-            return new_feed.id
-
-@orm.db_session
-def del_feed(id):
-    Feed[id].delete()
-
-@orm.db_session
 def add_category(title):
     exists = Category.get(title=title)
     if exists:
@@ -140,14 +93,28 @@ def format_datetime(value, format='full'):
     formats = {'full': '%m/%d/%Y %I:%M%p', 'date': '%m/%d/%Y', 'time': '%I:%M%p'}
     return value.strftime(formats[format])
 
-@app.route('/feeds', methods=['GET', 'POST'])
+@app.route('/', methods=['GET', 'POST'])
 @orm.db_session
 def feeds():
     if request.method == 'POST':
-        add_feed(request.form['url'])
+        url = request.form['url']
+        new_feed = Feed.get(url=url)
+        if not new_feed:
+            p = feedparser.parse(url)
+            title = p.feed.title if 'title' in p.feed else url
+            new_feed = Feed(title=title, url=url)
 
     feeds = orm.select(f for f in Feed)[:]
     return render_template('feeds.html', feeds=feeds)
+
+@app.route('/del_feed/<int:id>')
+@orm.db_session
+def del_feed(id):
+    try:
+        Feed[id].delete()
+        return redirect(url_for('feeds'))
+    except orm.ObjectNotFound:
+        return render_template('missing.html', entity='Feed', id=id)
 
 @app.route('/feed/<int:id>')
 @orm.db_session
@@ -160,11 +127,38 @@ def feed(id):
         return render_template('missing.html', entity='Feed', id=id)
 
 @app.route('/fetch/<int:id>')
+@orm.db_session
 def fetch(id):
-    fetch_feed(id)
-    return redirect(url_for('feed', id=id))
+    try:
+        feed = Feed[id]
+        p = feedparser.parse(feed.url, etag=feed.etag, modified=feed.modified)
+        feed.etag = p.etag if 'etag' in p else ''
+        feed.modified = p.modified if 'modified' in p else ''
+        for e in p.entries if 'entries' in p else []:
+            author = Author[add_author(e.author)] if 'author' in e and e.author else Author[add_author('none')]
+            tags = [Tag[add_tag(t.term)] for t in e.tags] if 'tags' in e else Tag[add_tag('none')]
+            title = e.title if 'title' in e else ''
+            url = e.link if 'link' in e else feed.url
+            published = datetime(*e.published_parsed[:6]) if 'published_parsed' in e else datetime.utcnow()
+            summary = e.summary if 'summary' in e else ''
+            a = Article.get(url=url)
+            if a:
+                if a.published != published:
+                    a.feed = feed
+                    a.author = author
+                    a.tags = tags
+                    a.title = title
+                    a.published = published
+                    a.summary = summary
+            else:
+                new_article = Article(feed=feed, author=author, tags=tags, title=title, url=url, published=published, summary=summary)
+        return redirect(url_for('feed', id=id))
+    except orm.ObjectNotFound:
+        return render_template('missing.html', entity='Feed', id=id)
 
 @app.route('/fetch_all')
+@orm.db_session
 def fetch_all():
-    fetch_all_feeds()
+    for feed_id in orm.select(f.id for f in Feed):
+        fetch(feed_id)
     return redirect(url_for('feeds'))

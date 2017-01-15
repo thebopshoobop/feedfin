@@ -5,7 +5,7 @@
 </head>
 <body>
     <h1>{{ title }}</h1>
-    <a href="/fetch/{{ id }}">Fetch Feed</a> <a href="/feeds">All Feeds</a>
+    <a href="{{ url_for('fetch', id=id) }}">Fetch Feed</a> <a href="{{ url_for('feeds') }}">All Feeds</a>
     <ul>
     {% for article in articles %}
         <li><a href="{{ article.url }}" target="_blank">{{ article.title }}</a></li>
