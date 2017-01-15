@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+`<!DOCTYPE html>
 <html lang="en">
 <head>
     <title>{{ feed.title }}</title>
@@ -6,8 +6,14 @@
 <body>
     <h1>{{ feed.title }}</h1>
     <ul>
-    {% for article in feed.articles %}
-        <li><a href="{{ article.url }}">{{ article.title }}</a></li>
+    {% for article in articles %}
+        <li><a href="{{ article.url }}" target="_blank">{{ article.title }}</a></li>
+        <ul>
+            {% if article.summary %}<li>{{ article.summary }}</li>{% endif %}
+            {% if article.tags[0].label != 'none' %}<li>Tags: {% for tag in article.tags %} |{{ tag.label }}| {% endfor %}</li>{% endif %}
+            <li>Published: {{ article.published | datetime }}</li>
+            {% if article.author.name != 'none' %}<li>Author: {{ article.author.name }}</li>{% endif %}
+        </ul>
     {% endfor %}
     </ul>
 </body>

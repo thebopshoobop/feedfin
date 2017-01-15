@@ -136,6 +136,11 @@ def add_author(name):
 def del_author(id):
     Author[id].delete()
 
+@app.template_filter('datetime')
+def format_datetime(value, format='full'):
+    formats = {'full': '%m/%d/%Y %I:%M%p', 'date': '%m/%d/%Y', 'time': '%I:%M%p'}
+    return value.strftime(formats[format])
+
 @app.route('/feeds')
 @orm.db_session
 def feeds():
@@ -147,6 +152,7 @@ def feeds():
 def feed(id):
     try:
         feed = Feed[id]
-        return render_template('feed.html', feed=feed)
+        articles = list(reversed([a.to_dict(with_collections=True, related_objects=True) for a in feed.articles.order_by(Article.published)]))
+        return render_template('feed.html', feed=feed.to_dict(), articles=articles)
     except orm.ObjectNotFound:
         return render_template('missing.html', entity='Feed', id=id)
