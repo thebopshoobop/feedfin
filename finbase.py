@@ -95,10 +95,20 @@ def format_datetime(value, format='full'):
 
 @app.route('/')
 @orm.db_session
-def feeds():
+def home():
     uncategorized = list(Feed.select(lambda u: not u.categories))
     categories = list(Category.select())
-    return render_template('feeds.html', uncategorized=uncategorized, categories=categories)
+    return render_template('home.html', uncategorized=uncategorized, categories=categories)
+
+@app.route('/feed/<int:id>')
+@orm.db_session
+def feed(id):
+    try:
+        feed = Feed[id]
+        articles = list(orm.select(a for a in Article if a.feed is feed).order_by(orm.desc(Article.published)))
+        return render_template('feed.html', feed=feed, articles=articles)
+    except orm.ObjectNotFound:
+        return render_template('missing.html', entity='Feed', id=id)
 
 @app.route('/add_feed', methods=['POST'])
 @orm.db_session
@@ -111,14 +121,14 @@ def add_feed():
             title = p.feed.title if 'title' in p.feed else url
             new_feed = Feed(title=title, url=url)
 
-    return redirect(url_for('feeds'))
+    return redirect(url_for('home'))
 
 @app.route('/del_feed/<int:id>')
 @orm.db_session
 def del_feed(id):
     try:
         Feed[id].delete()
-        return redirect(url_for('feeds'))
+        return redirect(url_for('home'))
     except orm.ObjectNotFound:
         return render_template('missing.html', entity='Feed', id=id)
 
@@ -144,6 +154,20 @@ def edit_feed(id):
     except orm.ObjectNotFound:
         return render_template('missing.html', entity='Feed', id=id)
 
+@app.route('/category')
+@app.route('/category/<int:id>')
+@orm.db_session
+def category(id=-1):
+    if id < 0:
+        articles = list(orm.select(a for a in Article if not a.feed.categories).order_by(orm.desc(Article.published)))
+        return render_template('category.html', articles=articles)
+    try:
+        category = Category[id]
+        articles = list(orm.select(a for a in Article if a.feed in category.feeds).order_by(orm.desc(Article.published)))
+        return render_template('category.html', category=category, articles=articles)
+    except orm.ObjectNotFound:
+        return render_template('missing.html', entity='Category', id=id)
+
 @app.route('/add_category', methods=['POST'])
 @orm.db_session
 def add_category():
@@ -153,7 +177,7 @@ def add_category():
         if not new_category:
             new_category = Category(title=title)
 
-    return redirect(url_for('feeds'))
+    return redirect(url_for('home'))
 
 
 @app.route('/del_category/<int:id>')
@@ -161,7 +185,7 @@ def add_category():
 def del_category(id):
     try:
         Category[id].delete()
-        return redirect(url_for('feeds'))
+        return redirect(url_for('home'))
     except orm.ObjectNotFound:
         return render_template('missing.html', entity='Category', id=id)
 
@@ -185,16 +209,6 @@ def edit_category(id):
     except orm.ObjectNotFound:
         return render_template('missing.html', entity='Category', id=id)
 
-@app.route('/feed/<int:id>')
-@orm.db_session
-def feed(id):
-    try:
-        feed = Feed[id]
-        articles = list(reversed([a.to_dict(with_collections=True, related_objects=True) for a in feed.articles.order_by(Article.published)]))
-        return render_template('feed.html', title=feed.title, id=feed.id, articles=articles)
-    except orm.ObjectNotFound:
-        return render_template('missing.html', entity='Feed', id=id)
-
 @app.route('/fetch/<int:id>')
 @orm.db_session
 def fetch(id):
@@ -204,8 +218,8 @@ def fetch(id):
         feed.etag = p.etag if 'etag' in p else ''
         feed.modified = p.modified if 'modified' in p else ''
         for e in p.entries if 'entries' in p else []:
-            author = Author[add_author(e.author)] if 'author' in e and e.author else Author[add_author('none')]
-            tags = [Tag[add_tag(t.term)] for t in e.tags] if 'tags' in e else Tag[add_tag('none')]
+            author = Author[add_author(e.author)] if 'author' in e and e.author else Author[add_author('None')]
+            tags = [Tag[add_tag(t.term)] for t in e.tags] if 'tags' in e else Tag[add_tag('Not Tagged')]
             title = e.title if 'title' in e else ''
             url = e.link if 'link' in e else feed.url
             published = datetime(*e.published_parsed[:6]) if 'published_parsed' in e else datetime.utcnow()
@@ -230,4 +244,22 @@ def fetch(id):
 def fetch_all():
     for feed_id in orm.select(f.id for f in Feed):
         fetch(feed_id)
-    return redirect(url_for('feeds'))
+    return redirect(url_for('home'))
+
+@app.route('/fetch_category')
+@app.route('/fetch_category/<int:id>')
+@orm.db_session
+def fetch_category(id=-1):
+    if id < 0:
+        feeds = orm.select(f for f in Feed if not f.categories)
+        for feed in feeds:
+            fetch(feed.id)
+        return redirect(url_for('category'))
+    else:
+        try:
+            category = Category[id]
+            for feed in category.feeds:
+                fetch(feed.id)
+            return redirect(url_for('category', id=id))
+        except orm.ObjectNotFound:
+            return render_template('missing.html', entity='Category', id=id)

@@ -1,17 +1,19 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>{{ title }}</title>
+    <title>{{ feed.title }}</title>
 </head>
 <body>
-    <h1>{{ title }}</h1>
-    <a href="{{ url_for('edit_feed', id=id) }}">Edit Feed</a> <a href="{{ url_for('fetch', id=id) }}">Fetch Feed</a> <a href="{{ url_for('feeds') }}">All Feeds</a>
+    <h1>{{ feed.title }}</h1>
+    <a href="{{ url_for('home') }}">Home</a>
+    <a href="{{ url_for('edit_feed', id=feed.id) }}">Edit Feed</a>
+    <a href="{{ url_for('fetch', id=feed.id) }}">Fetch Feed</a>
     <ul>
     {% for article in articles %}
         <li><a href="{{ article.url }}" target="_blank">{{ article.title }}</a></li>
         <ul>
             {% if article.summary %}<li>{{ article.summary|safe }}</li>{% endif %}
-            {% if article.tags[0].label != "none" %}<li>Tags: {% for tag in article.tags %} |{{ tag.label }}| {% endfor %}</li>{% endif %}
+            <li>Tags: {% for tag in article.tags %} |{{ tag.label }}| {% endfor %}</li>
             <li>Published: {{ article.published | datetime }}</li>
             {% if article.author.name != "none" %}<li>Author: {{ article.author.name }}</li>{% endif %}
         </ul>
