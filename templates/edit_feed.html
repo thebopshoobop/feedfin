@@ -31,5 +31,9 @@
         </dl>
         <input type="submit" name="submit" value="Delete"> <input type="submit" name="submit" value="Reset"> <input type="submit" name="submit" value="Save">
     </form>
+    <h3>Add Category</h3>
+    <form method="POST" action="{{ url_for('add_category') }}">
+        <input type="text" name="category"> <input type="submit" value="Add">
+    </form>
 </body>
 </html>

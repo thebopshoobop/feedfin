@@ -29,5 +29,9 @@
         </dl>
         <input type="submit" name="submit" value="Delete"> <input type="submit" name="submit" value="Reset"> <input type="submit" name="submit" value="Save">
     </form>
+    <h3>Add Feed</h3>
+    <form method="POST" action="{{ url_for('add_feed') }}">
+        <input type="text" name="url"> <input type="submit" value="Add">
+    </form>
 </body>
 </html>

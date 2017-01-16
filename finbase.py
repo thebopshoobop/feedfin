@@ -102,7 +102,7 @@ def add_feed():
             title = p.feed.title if 'title' in p.feed else url
             new_feed = Feed(title=title, url=url)
 
-    return redirect(url_for('home'))
+    return redirect(redirect_referrer())
 
 @app.route('/del_feed/<int:id>')
 @orm.db_session
@@ -158,7 +158,7 @@ def add_category():
         if not new_category:
             new_category = Category(title=title)
 
-    return redirect(url_for('home'))
+    return redirect(redirect_referrer())
 
 
 @app.route('/del_category/<int:id>')
@@ -242,3 +242,6 @@ def fetch_category(id=-1):
             return redirect(url_for('category', id=id))
         except orm.ObjectNotFound:
             return render_template('missing.html', entity='Category', id=id)
+
+def redirect_referrer(default='home'):
+    return request.referrer or url_for(default)
