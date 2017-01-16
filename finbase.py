@@ -22,7 +22,6 @@ class Article(db.Entity):
     id = orm.PrimaryKey(int, auto=True)
     feed = orm.Required('Feed')
     author = orm.Optional('Author')
-    tags = orm.Set('Tag')
     title = orm.Required(str)
     url = orm.Required(str, unique=True)
     read = orm.Optional(bool, default=False)
@@ -33,11 +32,6 @@ class Category(db.Entity):
     id = orm.PrimaryKey(int, auto=True)
     title = orm.Required(str, unique=True)
     feeds = orm.Set('Feed')
-
-class Tag(db.Entity):
-    id = orm.PrimaryKey(int, auto=True)
-    label = orm.Required(str, unique=True)
-    articles = orm.Set('Article')
 
 class Author(db.Entity):
     id = orm.PrimaryKey(int, auto=True)
@@ -60,19 +54,6 @@ def add_category(title):
 def del_category(id):
     Category[id].delete()
 
-@orm.db_session
-def add_tag(label):
-    exists = Tag.get(label=label)
-    if exists:
-        return exists.id
-    else:
-        new_tag = Tag(label=label)
-        orm.commit()
-        return new_tag.id
-
-@orm.db_session
-def del_tag(id):
-    Tag[id].delete()
 
 @orm.db_session
 def add_author(name):
@@ -219,7 +200,6 @@ def fetch(id):
         feed.modified = p.modified if 'modified' in p else ''
         for e in p.entries if 'entries' in p else []:
             author = Author[add_author(e.author)] if 'author' in e and e.author else Author[add_author('None')]
-            tags = [Tag[add_tag(t.term)] for t in e.tags] if 'tags' in e else Tag[add_tag('Not Tagged')]
             title = e.title if 'title' in e else ''
             url = e.link if 'link' in e else feed.url
             published = datetime(*e.published_parsed[:6]) if 'published_parsed' in e else datetime.utcnow()
@@ -229,12 +209,11 @@ def fetch(id):
                 if a.published != published:
                     a.feed = feed
                     a.author = author
-                    a.tags = tags
                     a.title = title
                     a.published = published
                     a.summary = summary
             else:
-                new_article = Article(feed=feed, author=author, tags=tags, title=title, url=url, published=published, summary=summary)
+                new_article = Article(feed=feed, author=author, title=title, url=url, published=published, summary=summary)
         return redirect(url_for('feed', id=id))
     except orm.ObjectNotFound:
         return render_template('missing.html', entity='Feed', id=id)

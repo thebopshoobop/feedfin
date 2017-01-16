@@ -19,7 +19,6 @@
         <ul>
             <li>From: <a href="{{ url_for('feed', id=article.feed.id) }}">{{ article.feed.title }}</a></li>
             {% if article.summary %}<li>{{ article.summary|safe }}</li>{% endif %}
-            <li>Tags: {% for tag in article.tags if tag.label != "none" %} |{{ tag.label }}| {% endfor %}</li>
             <li>Published: {{ article.published | datetime }}</li>
             {% if article.author.name != "none" %}<li>Author: {{ article.author.name }}</li>{% endif %}
         </ul>

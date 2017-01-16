@@ -13,7 +13,6 @@
         <li><a href="{{ article.url }}" target="_blank">{{ article.title }}</a></li>
         <ul>
             {% if article.summary %}<li>{{ article.summary|safe }}</li>{% endif %}
-            <li>Tags: {% for tag in article.tags %} |{{ tag.label }}| {% endfor %}</li>
             <li>Published: {{ article.published | datetime }}</li>
             {% if article.author.name != "none" %}<li>Author: {{ article.author.name }}</li>{% endif %}
         </ul>
