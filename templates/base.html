@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    {% block head %}
+    <title>{% block title %}{% endblock title %} - feedfin</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {% endblock head %}
+</head>
+<body>
+    <div id="content">
+        {% block content %}{% endblock content %}
+    </div>
+    <div id="footer">
+        <h3>Add Feed</h3>
+        <form method="POST" action="{{ url_for('add_feed') }}">
+            <input type="text" name="url"> <input type="submit" value="Add">
+        </form>
+        <h3>Add Category</h3>
+        <form method="POST" action="{{ url_for('add_category') }}">
+            <input type="text" name="category"> <input type="submit" value="Add">
+        </form>
+        {% block footer %}{% endblock footer %}
+    </div>
+</body>
+</html>

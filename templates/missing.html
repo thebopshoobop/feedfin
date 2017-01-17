@@ -1,11 +1,7 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <title>Missing</title>
-</head>
-<body>
+{% extends "base.html" %}
+{% block title %}Missing{% endblock title %}
+{% block content %}
     <h1>Missing:</h1>
     <h3>There is no {{ entity }} with id {{ id }}.</h3>
     <a href="{{ url_for('home') }}">Home</a>
-</body>
-</html>
+{% endblock content %}

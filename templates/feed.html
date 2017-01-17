@@ -1,9 +1,6 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <title>{{ feed.title }}</title>
-</head>
-<body>
+{% extends "base.html" %}
+{% block title %}{{ feed.title }}{% endblock title %}
+{% block content %}
     <h1>{{ feed.title }}</h1>
     <a href="{{ url_for('home') }}">Home</a>
     <a href="{{ url_for('edit_feed', id=feed.id) }}">Edit Feed</a>
@@ -12,11 +9,10 @@
     {% for article in articles %}
         <li><a href="{{ article.url }}" target="_blank">{{ article.title }}</a></li>
         <ul>
-            {% if article.summary %}<li>{{ article.summary|safe }}</li>{% endif %}
+            {% if article.summary %}<li>{{ article.summary }}</li>{% endif %}
             <li>Published: {{ article.published | datetime }}</li>
             {% if article.author.name != "none" %}<li>Author: {{ article.author.name }}</li>{% endif %}
         </ul>
     {% endfor %}
     </ul>
-</body>
-</html>
+{% endblock content %}

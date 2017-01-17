@@ -1,12 +1,10 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <title>feedfin</title>
-</head>
-<body>
-    <h1>feedfin - Home</h1>
+{% extends "base.html" %}
+{% block title %}Home{% endblock title %}
+{% block content %}
+    <h1>Home</h1>
     <a href="{{ url_for('fetch_all') }}">Fetch All Feeds</a>
     <ul>
+        <a href="{{ url_for('all_feeds') }}"><h3>All Feeds</h3></a>
         <a href="{{ url_for('category') }}"><h3>Uncategorized</h3></a>
         <ul>
         {% for feed in uncategorized %}
@@ -24,13 +22,4 @@
         </ul>
     {% endfor %}
     </ul>
-    <h3>Add Feed</h3>
-    <form method="POST" action="{{ url_for('add_feed') }}">
-        <input type="text" name="url"> <input type="submit" value="Add">
-    </form>
-    <h3>Add Category</h3>
-    <form method="POST" action="{{ url_for('add_category') }}">
-        <input type="text" name="category"> <input type="submit" value="Add">
-    </form>
-</body>
-</html>
+{% endblock content %}

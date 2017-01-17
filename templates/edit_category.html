@@ -1,9 +1,6 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <title>Edit Category</title>
-</head>
-<body>
+{% extends "base.html" %}
+{% block title %}Edit Category{% endblock title %}
+{% block content %}
     <h1>Edit Category</h1>
      <a href="{{ url_for('home') }}">Home</a>
      <a href="{{ url_for('category', id=category.id) }}">This Category</a>
@@ -29,9 +26,4 @@
         </dl>
         <input type="submit" name="submit" value="Delete"> <input type="submit" name="submit" value="Reset"> <input type="submit" name="submit" value="Save">
     </form>
-    <h3>Add Feed</h3>
-    <form method="POST" action="{{ url_for('add_feed') }}">
-        <input type="text" name="url"> <input type="submit" value="Add">
-    </form>
-</body>
-</html>
+{% endblock content %}

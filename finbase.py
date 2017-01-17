@@ -53,11 +53,6 @@ def add_category(title):
         return new_category.id
 
 @orm.db_session
-def del_category(id):
-    Category[id].delete()
-
-
-@orm.db_session
 def add_author(name):
     exists=Author.get(name=name)
     if exists:
@@ -66,10 +61,6 @@ def add_author(name):
         new_author = Author(name=name)
         orm.commit()
         return new_author.id
-
-@orm.db_session
-def del_author(id):
-    Author[id].delete()
 
 @app.template_filter('datetime')
 def format_datetime(value, format='full'):
@@ -92,6 +83,12 @@ def feed(id):
         return render_template('feed.html', feed=feed, articles=articles)
     except orm.ObjectNotFound:
         return render_template('missing.html', entity='Feed', id=id)
+
+@app.route('/all_feeds')
+@orm.db_session
+def all_feeds():
+    articles = list(Article.select().order_by(orm.desc(Article.published)))
+    return render_template('all_feeds.html', articles=articles)
 
 @app.route('/add_feed', methods=['POST'])
 @orm.db_session
@@ -225,7 +222,7 @@ def fetch(id):
 def fetch_all():
     for feed_id in orm.select(f.id for f in Feed):
         fetch(feed_id)
-    return redirect(url_for('home'))
+    return redirect(redirect_referrer())
 
 @app.route('/fetch_category')
 @app.route('/fetch_category/<int:id>')
