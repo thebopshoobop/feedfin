@@ -2,3 +2,4 @@ pip-tools
 pony
 feedparser
 flask
+beautifulsoup4
