@@ -2,6 +2,7 @@ from pony import orm
 from datetime import datetime
 import feedparser
 from flask import Flask, render_template, request, redirect, url_for
+from urllib.parse import urlparse
 
 db = orm.Database()
 #orm.sql_debug(True)
@@ -244,4 +245,7 @@ def fetch_category(id=-1):
             return render_template('missing.html', entity='Category', id=id)
 
 def redirect_referrer(default='home'):
-    return request.referrer or url_for(default)
+    if urlparse(url_for(default, _external=True)).netloc == urlparse(request.referrer).netloc:
+        return request.referrer
+    else:
+        return url_for(default)
