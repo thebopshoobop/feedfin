@@ -3,6 +3,7 @@ from datetime import datetime
 import feedparser
 from flask import Flask, render_template, request, redirect, url_for
 from urllib.parse import urlparse
+from bs4 import BeautifulSoup, Comment
 
 db = orm.Database()
 #orm.sql_debug(True)
@@ -204,7 +205,7 @@ def fetch(id):
             title = e.title if 'title' in e else ''
             url = e.link if 'link' in e else feed.url
             published = datetime(*e.published_parsed[:6]) if 'published_parsed' in e else datetime.utcnow()
-            summary = e.summary if 'summary' in e else ''
+            summary = strip_summary(e.summary) if 'summary' in e else ''
             a = Article.get(url=url)
             if a:
                 if a.published != published:
@@ -249,3 +250,15 @@ def redirect_referrer(default='home'):
         return request.referrer
     else:
         return url_for(default)
+
+def strip_summary(summary):
+    soup = BeautifulSoup(summary, 'html.parser')
+    text = soup.find_all(text=True)
+    return ' '.join(list(filter(visible, text)))[:300] + '...'
+
+def visible(element):
+    if element.parent.name in ['style', 'script', '[document]', 'head', 'title', 'meta']:
+        return False
+    elif isinstance(element, Comment):
+        return False
+    return True
