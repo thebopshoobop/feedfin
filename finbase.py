@@ -67,12 +67,24 @@ def format_datetime(value, format='full'):
     formats = {'full': '%m/%d/%Y %I:%M%p', 'date': '%m/%d/%Y', 'time': '%I:%M%p'}
     return value.strftime(formats[format])
 
-@app.route('/')
+@app.context_processor
 @orm.db_session
-def home():
+def nav_variables():
+    feeds = list(Feed.select())
     uncategorized = list(Feed.select(lambda u: not u.categories))
     categories = list(Category.select())
-    return render_template('home.html', uncategorized=uncategorized, categories=categories)
+    return dict(nav_feeds=feeds, nav_uncategorized=uncategorized, nav_categories=categories)
+
+@app.route('/settings')
+@orm.db_session
+def settings():
+    return render_template('settings.html')
+
+@app.route('/')
+@orm.db_session
+def all_feeds():
+    articles = list(Article.select().order_by(orm.desc(Article.published)))
+    return render_template('all_feeds.html', articles=articles)
 
 @app.route('/feed/<int:id>')
 @orm.db_session
@@ -83,12 +95,6 @@ def feed(id):
         return render_template('feed.html', feed=feed, articles=articles)
     except orm.ObjectNotFound:
         return render_template('missing.html', entity='Feed', id=id)
-
-@app.route('/all_feeds')
-@orm.db_session
-def all_feeds():
-    articles = list(Article.select().order_by(orm.desc(Article.published)))
-    return render_template('all_feeds.html', articles=articles)
 
 @app.route('/add_feed', methods=['POST'])
 @orm.db_session
@@ -108,7 +114,7 @@ def add_feed():
 def del_feed(id):
     try:
         Feed[id].delete()
-        return redirect(url_for('home'))
+        return redirect(redirect_referrer())
     except orm.ObjectNotFound:
         return render_template('missing.html', entity='Feed', id=id)
 
@@ -125,6 +131,8 @@ def edit_feed(id):
             if  new != old:
                 feed.categories.clear()
                 [feed.categories.add(Category[c]) for c in new]
+            return redirect(url_for('settings'))
+
         elif request.method == 'POST' and request.form['submit'] == 'Delete':
             return redirect(url_for('del_feed', id=id))
 
@@ -165,7 +173,7 @@ def add_category():
 def del_category(id):
     try:
         Category[id].delete()
-        return redirect(url_for('home'))
+        return redirect(redirect_referrer())
     except orm.ObjectNotFound:
         return render_template('missing.html', entity='Category', id=id)
 
@@ -181,6 +189,8 @@ def edit_category(id):
             if  new != old:
                 category.feeds.clear()
                 [category.feeds.add(Feed[f]) for f in new]
+            return redirect(url_for('settings'))
+
         elif request.method == 'POST' and request.form['submit'] == 'Delete':
             return redirect(url_for('del_category', id=id))
 
@@ -242,7 +252,7 @@ def fetch_category(id=-1):
         except orm.ObjectNotFound:
             return render_template('missing.html', entity='Category', id=id)
 
-def redirect_referrer(default='home'):
+def redirect_referrer(default='all_feeds'):
     if urlparse(url_for(default, _external=True)).netloc == urlparse(request.referrer).netloc:
         return request.referrer
     else:

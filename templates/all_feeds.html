@@ -2,7 +2,6 @@
 {% block title %}All Feeds{% endblock title %}
 {% block content %}
     <h1>All Feeds</h1>
-    <a href="{{ url_for('home') }}">Home</a>
     <a href="{{ url_for('fetch_all') }}">Fetch All Feeds</a>
     <ul>
     {% for article in articles %}

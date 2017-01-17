@@ -2,7 +2,6 @@
 {% block title %}{{ feed.title }}{% endblock title %}
 {% block content %}
     <h1>{{ feed.title }}</h1>
-    <a href="{{ url_for('home') }}">Home</a>
     <a href="{{ url_for('edit_feed', id=feed.id) }}">Edit Feed</a>
     <a href="{{ url_for('fetch', id=feed.id) }}">Fetch Feed</a>
     <ul>

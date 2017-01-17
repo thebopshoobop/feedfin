@@ -7,18 +7,35 @@
     {% endblock head %}
 </head>
 <body>
+    <div id="navbar">
+        <a href="{{ url_for('all_feeds') }}"><h3>All Feeds</h3></a>
+        <ul>
+        {% for feed in nav_feeds %}
+            <li><a href="{{ url_for('feed', id=feed.id) }}">{{ feed.title }}</a></li>
+        {% endfor %}
+        </ul>
+        <a href="{{ url_for('category') }}"><h3>Uncategorized</h3></a>
+        <ul>
+        {% for feed in nav_uncategorized %}
+            <li><a href="{{ url_for('feed', id=feed.id) }}">{{ feed.title }}</a></li>
+        {% endfor %}
+        </ul>
+    {% for category in nav_categories %}
+        <a href="{{ url_for('category', id=category.id) }}"><h3>{{ category.title }}</h3></a>
+        <ul>
+        {% if category.feeds %}
+        {% for feed in category.feeds %}
+            <li><a href="{{ url_for('feed', id=feed.id) }}">{{ feed.title }}</a></li>
+        {% endfor %}
+        {% endif %}
+        </ul>
+    {% endfor %}
+        <a href="{{ url_for('settings') }}"><h3>Settings</h3></a>
+    </div>
     <div id="content">
         {% block content %}{% endblock content %}
     </div>
     <div id="footer">
-        <h3>Add Feed</h3>
-        <form method="POST" action="{{ url_for('add_feed') }}">
-            <input type="text" name="url"> <input type="submit" value="Add">
-        </form>
-        <h3>Add Category</h3>
-        <form method="POST" action="{{ url_for('add_category') }}">
-            <input type="text" name="category"> <input type="submit" value="Add">
-        </form>
         {% block footer %}{% endblock footer %}
     </div>
 </body>
