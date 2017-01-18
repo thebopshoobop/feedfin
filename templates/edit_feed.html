@@ -2,28 +2,29 @@
 {% block title %}Edit Feed{% endblock title %}
 {% block content %}
     <h1>Edit Feed</h1>
-     <a href="{{ url_for('feed', id=feed.id) }}">View Feed</a>
-    <form method="POST" action="{{ url_for('edit_feed', id=feed.id) }}">
+    <a href="{{ url_for('display') }}?entity=feed&id={{ feed.id }}">View Feed</a>
+    <form method="POST" action="{{ url_for('edit_entity') }}">
+        <input type="hidden" name="entity" value="feed">
+        <input type="hidden" name="id" value="{{ feed.id }}">
         <dl>
             <dt>Feed Name:</dt>
             <dd><input type="text" name="title" value="{{ feed.title }}"></dd>
             <dt>Feed Address:</dt>
             <dd><input type="text" name="url" value="{{ feed.url }}"></dd>
             <dt>Categories:</dt>
-            {% if feed.categories %}
+            {% if feed.categories or other_categories %}
             <dd>
             {% for c in feed.categories %}
                 <label><input type="checkbox" name="category" value="{{ c.id }}" checked="checked">{{ c.title }}</label>
             {% endfor %}
-            </dd>
             {% endif %}
             {% if other_categories %}
-            <dd>
             {% for c in other_categories %}
                 <label><input type="checkbox" name="category" value="{{ c.id }}">{{ c.title }}</label>
             {% endfor %}
             </dd>
             {% endif %}
         </dl>
-        <input type="submit" name="submit" value="Delete"> <input type="submit" name="submit" value="Reset"> <input type="submit" name="submit" value="Save">
+        <button type="submit" name="submit" value="delete">Delete</button> <button type="submit" name="submit" value="reset">Reset</button> <button type="submit" name="submit" value="save">Save</button>
+    </form>
 {% endblock content %}

@@ -8,24 +8,24 @@
 </head>
 <body>
     <div id="navbar">
-        <a href="{{ url_for('all_feeds') }}"><h3>All Feeds</h3></a>
+        <a href="{{ url_for('display') }}"><h3>All Feeds</h3></a>
         <ul>
         {% for feed in nav_feeds %}
-            <li><a href="{{ url_for('feed', id=feed.id) }}">{{ feed.title }}</a></li>
+            <li><a href="{{ url_for('display') }}?entity=feed&id={{ feed.id }}">{{ feed.title }}</a></li>
         {% endfor %}
         </ul>
-        <a href="{{ url_for('category') }}"><h3>Uncategorized</h3></a>
+        <a href="{{ url_for('display') }}?entity=category"><h3>Uncategorized</h3></a>
         <ul>
         {% for feed in nav_uncategorized %}
-            <li><a href="{{ url_for('feed', id=feed.id) }}">{{ feed.title }}</a></li>
+            <li><a href="{{ url_for('display') }}?entity=feed&id={{ feed.id }}">{{ feed.title }}</a></li>
         {% endfor %}
         </ul>
     {% for category in nav_categories %}
-        <a href="{{ url_for('category', id=category.id) }}"><h3>{{ category.title }}</h3></a>
+        <a href="{{ url_for('display') }}?entity=category&id={{ category.id }}"><h3>{{ category.title }}</h3></a>
         <ul>
         {% if category.feeds %}
         {% for feed in category.feeds %}
-            <li><a href="{{ url_for('feed', id=feed.id) }}">{{ feed.title }}</a></li>
+            <li><a href="{{ url_for('display') }}?entity=feed&id={{ feed.id }}">{{ feed.title }}</a></li>
         {% endfor %}
         {% endif %}
         </ul>

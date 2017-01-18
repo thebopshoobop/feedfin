@@ -7,15 +7,16 @@
         <ul>
         {% for feed in nav_feeds %}
             <li>
-                <a href="{{ url_for('feed', id=feed.id) }}">{{ feed.title }}</a>
-                <a href="{{ url_for('del_feed', id=feed.id) }}">Delete</a>
-                <a href="{{ url_for('edit_feed', id=feed.id) }}">Edit</a>
+                <a href="{{ url_for('display') }}?entity=feed&id={{ feed.id }}">{{ feed.title }}</a>
+                <a href="{{ url_for('del_entity') }}?entity=feed&id={{ feed.id }}"><button>Delete</button></a>
+                <a href="{{ url_for('edit_entity') }}?entity=feed&id={{ feed.id }}"><button>Edit</button></a>
             </li>
         {% endfor %}
         </ul>
-        <h3>Add Feed</h3>
-        <form method="POST" action="{{ url_for('add_feed') }}">
-            <input type="text" name="url"> <input type="submit" value="Add">
+        <h4>Add Feed</h4>
+        <form method="POST" action="{{ url_for('add_entity') }}">
+            <input type="hidden" name="entity" value="feed">
+            <input type="url" name="url"> <input type="submit" value="Add">
         </form>
     </div>
     <div>
@@ -23,14 +24,15 @@
         <ul>
         {% for category in nav_categories %}
             <li>
-                <a href="{{ url_for('category', id=category.id) }}">{{ category.title }}</a>
-                <a href="{{ url_for('del_category', id=category.id) }}">Delete</a>
-                <a href="{{ url_for('edit_category', id=category.id) }}">Edit</a>
+                <a href="{{ url_for('display') }}?entity=category&id={{ category.id }}">{{ category.title }}</a>
+                <a href="{{ url_for('del_entity') }}?entity=category&id={{ category.id }}"><button>Delete</button></a>
+                <a href="{{ url_for('edit_entity') }}?entity=category&id={{ category.id }}"><button>Edit</button></a>
             </li>
         {% endfor %}
         </ul>
-        <h3>Add Category</h3>
-        <form method="POST" action="{{ url_for('add_category') }}">
+        <h4>Add Category</h4>
+        <form method="POST" action="{{ url_for('add_entity') }}">
+            <input type="hidden" name="entity" value="category">
             <input type="text" name="category"> <input type="submit" value="Add">
         </form>
     </div>
