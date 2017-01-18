@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}
+    {% if type == "feed" %}
+        {{ feed.title }}
+    {% elif type == "all_feeds" %}
+        All Feeds
+    {% elif type == "category" %}
+        {{ category.title }}
+    {% elif type == "uncategorized" %}
+        uncategorized
+    {% endif %}
+{% endblock title %}
+{% block content %}
+    <div id="header">
+    {% if type == "feed" %}
+        <h1>{{ feed.title }}</h1>
+        <a href="{{ url_for('edit_entity') }}?entity=feed&id={{ feed.id }}"><button>Edit Feed</button></a>
+        <a href="{{ url_for('fetch_entity') }}?entity=feed&id={{ feed.id }}"><button>Fetch Feed</button></a>
+    {% elif type == "all_feeds"%}
+        <h1>All Feeds</h1>
+        <a href="{{ url_for('fetch_entity') }}"><button>Fetch Feeds</button></a>
+    {% elif type == "category" %}
+        <h1>{{ category.title }}</h1>
+        <a href="{{ url_for('edit_entity') }}?entity=category&id={{ category.id }}"><button>Edit Category</button></a>
+        <a href="{{ url_for('fetch_entity') }}?entity=category&id={{ category.id }}"><button>Fetch Feeds</button></a>
+    {% elif type == "uncategorized" %}
+        <h1>Uncategorized</h1>
+        <a href="{{ url_for('fetch_entity') }}?entity=category"><button>Fetch Feeds</button></a>
+    {% endif %}
+    </div>
+    <div id="article_list">
+        <ul>
+        {% if type == "feed" %}
+            {% for article in articles %}
+            <li><a href="{{ article.url }}" target="_blank">{{ article.title }}</a></li>
+            <ul>
+                {% if article.summary %}<li>{{ article.summary }}</li>{% endif %}
+                <li>Published: {{ article.published | datetime }}</li>
+                {% if article.author.name != "none" %}<li>Author: {{ article.author.name }}</li>{% endif %}
+            </ul>
+            {% endfor %}
+        {% else %}
+            {% for article in articles %}
+            <li><a href="{{ article.url }}" target="_blank">{{ article.title }}</a></li>
+            <ul>
+                <li>From: <a href="{{ url_for('display') }}?entity=feed&id={{ article.feed.id }}">{{ article.feed.title }}</a></li>
+                {% if article.summary %}<li>{{ article.summary }}</li>{% endif %}
+                <li>Published: {{ article.published | datetime }}</li>
+                {% if article.author.name != "none" %}<li>Author: {{ article.author.name }}</li>{% endif %}
+            </ul>
+            {% endfor %}
+        {% endif %}
+        </ul>
+    </div>
+{% endblock content %}

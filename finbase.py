@@ -122,18 +122,18 @@ def display():
     try:
         if not 'entity' in request.args:
             articles = list(Article.select().order_by(orm.desc(Article.published)))
-            return render_template('all_feeds.html', articles=articles)
+            return render_template('display.html', type='all_feeds', articles=articles)
         elif request.args['entity'] == 'category' and 'id' not in request.args:
             articles = list(orm.select(a for a in Article if not a.feed.categories).order_by(orm.desc(Article.published)))
-            return render_template('category.html', articles=articles)
+            return render_template('display.html', type='uncategorized', articles=articles)
         elif valid_entity() and request.args['entity'] == 'category':
             category = Category[request.args['id']]
             articles = list(orm.select(a for a in Article if a.feed in category.feeds).order_by(orm.desc(Article.published)))
-            return render_template('category.html', category=category, articles=articles)
+            return render_template('display.html', type='category', category=category, articles=articles)
         elif valid_entity() and request.args['entity'] == 'feed':
             feed = Feed[request.args['id']]
             articles = list(orm.select(a for a in Article if a.feed is feed).order_by(orm.desc(Article.published)))
-            return render_template('feed.html', feed=feed, articles=articles)
+            return render_template('display.html', type='feed', feed=feed, articles=articles)
     except orm.ObjectNotFound:
         return render_template('missing.html', entity=request.args['entity'], id=request.args['id'])
 
@@ -182,12 +182,12 @@ def edit_entity():
             if request.args['entity'] == 'feed':
                 feed=Feed[request.args['id']]
                 other_categories = list(orm.select(c for c in Category if c not in feed.categories))
-                return render_template('edit_feed.html', feed=feed, other_categories=other_categories)
+                return render_template('edit.html', feed=feed, other_categories=other_categories)
 
             elif request.args['entity'] == 'category':
                 category = Category[request.args['id']]
                 other_feeds = list(orm.select(f for f in Feed if f not in category.feeds))
-                return render_template('edit_category.html', category=category, other_feeds=other_feeds)
+                return render_template('edit.html', category=category, other_feeds=other_feeds)
 
         elif request.method =='POST':
             if request.form['submit'] in ['delete', 'reset']:
