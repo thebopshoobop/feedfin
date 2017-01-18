@@ -39,7 +39,7 @@
                 {% if article.author.name != "none" %}<li>Author: {{ article.author.name }}</li>{% endif %}
             </ul>
             {% endfor %}
-        {% else %}
+        {% elif type in ["all_feeds", "category", "uncategorized"] %}
             {% for article in articles %}
             <li><a href="{{ article.url }}" target="_blank">{{ article.title }}</a></li>
             <ul>

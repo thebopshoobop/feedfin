@@ -1,5 +1,7 @@
 {% extends "base.html" %}
-{% block title %}Edit Feed{% endblock title %}
+{% block title %}
+{% if feed %}Edit Feed{% elif category %}Edit Category{% endif %}
+{% endblock title %}
 {% block content %}
     <div id="header">
     {% if feed %}
