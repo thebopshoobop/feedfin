@@ -167,7 +167,7 @@ def del_entity():
         except orm.ObjectNotFound:
             return render_template('missing.html', entity=request.args['entity'], id=request.args['id'])
 
-    return redirect(redirect_referrer())
+    return redirect(url_for('settings'))
 
 @app.route('/edit', methods=['POST', 'GET'])
 @orm.db_session
