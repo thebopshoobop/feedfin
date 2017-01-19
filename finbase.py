@@ -4,12 +4,14 @@ import feedparser
 from flask import Flask, render_template, request, redirect, url_for
 from urllib.parse import urlparse
 from bs4 import BeautifulSoup, Comment
+from flask_bootstrap import Bootstrap
 
 db = orm.Database()
 #orm.sql_debug(True)
 db.bind('sqlite', 'fbdb.sqlite', create_db=True)
 
 app = Flask(__name__)
+bootstrap = Bootstrap(app)
 
 class Feed(db.Entity):
     id = orm.PrimaryKey(int, auto=True)
