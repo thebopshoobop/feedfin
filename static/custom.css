@@ -1,0 +1,40 @@
+/* space body below fixed header, bottom breathing room */
+body {
+    padding-top: 60px;
+    padding-bottom: 25px;
+}
+
+/* keep navbar header from floating down below errything */
+.navbar-header {
+    float: none;
+}
+
+/* remove ugly button border, always display buttons, make button margin & padding match navbar-brand */
+.navbar-toggle {
+    border: none;
+    display: block;
+    margin: 0px;
+    padding: 15px;
+}
+
+/* squish article padding */
+.panel {
+    margin-bottom: 10px;
+}
+
+/* make the article panes linktastic, squish article padding */
+a.panel-body {
+    display: block;
+    padding: 8px;
+}
+
+/* squish article padding */
+.panel-heading {
+    padding: 8px;
+}
+
+/* limit article-list to a reasonable width */
+.article-list,
+.edit-panel {
+    max-width: 60em;
+}

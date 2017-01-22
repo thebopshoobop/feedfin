@@ -7,49 +7,40 @@
     {% elif type == "category" %}
         {{ category.title }}
     {% elif type == "uncategorized" %}
-        uncategorized
+        Uncategorized
     {% endif %}
 {% endblock title %}
-{% block content %}
-    <div id="header">
+{% block navbar_insert %}
     {% if type == "feed" %}
-        <h1>{{ feed.title }}</h1>
-        <a href="{{ url_for('edit_entity') }}?entity=feed&id={{ feed.id }}"><button>Edit Feed</button></a>
-        <a href="{{ url_for('fetch_entity') }}?entity=feed&id={{ feed.id }}"><button>Fetch Feed</button></a>
+        <a class="navbar-brand" href="{{ url_for('display') }}?entity=feed&id={{ feed.lid }}">{{ feed.title }}</a>
+        <a class="navbar-right navbar-toggle" href="{{ url_for('edit_entity') }}?entity=feed&id={{ feed.id }}"><span class="sr-only">Edit Feed</span><span class="fa fa-pencil fa-lg"></span></a>
+        <a class="navbar-right navbar-toggle" href="{{ url_for('fetch_entity') }}?entity=feed&id={{ feed.id }}"><span class="sr-only">Fetch Feed</span><span class="fa fa-refresh fa-lg"></span></a>
     {% elif type == "all_feeds"%}
-        <h1>All Feeds</h1>
-        <a href="{{ url_for('fetch_entity') }}"><button>Fetch Feeds</button></a>
+        <a class="navbar-brand" href="{{ url_for('display') }}?entity=feed">All Feeds</span></a>
+        <a class="navbar-right navbar-toggle" href="{{ url_for('fetch_entity') }}"> <span class="sr-only">Fetch Feeds</span><span class="fa fa-refresh fa-lg"></a>
     {% elif type == "category" %}
-        <h1>{{ category.title }}</h1>
-        <a href="{{ url_for('edit_entity') }}?entity=category&id={{ category.id }}"><button>Edit Category</button></a>
-        <a href="{{ url_for('fetch_entity') }}?entity=category&id={{ category.id }}"><button>Fetch Feeds</button></a>
+        <a class="navbar-brand" href="{{ url_for('display') }}?entity=category&id={{ category.id }}">{{ category.title }}</a>
+        <a class="navbar-right navbar-toggle" href="{{ url_for('edit_entity') }}?entity=category&id={{ category.id }}"><span class="sr-only">Edit Category</span><span class="fa fa-pencil fa-lg"></span></a>
+        <a class="navbar-right navbar-toggle" href="{{ url_for('fetch_entity') }}?entity=category&id={{ category.id }}"><span class="sr-only">Fetch Feeds</span><span class="fa fa-refresh fa-lg"></span></a>
     {% elif type == "uncategorized" %}
-        <h1>Uncategorized</h1>
-        <a href="{{ url_for('fetch_entity') }}?entity=category"><button>Fetch Feeds</button></a>
+        <a class="navbar-brand" href="{{ url_for('display') }}?entity=category">Uncategorized</a>
+        <a class="navbar-right navbar-toggle" href="{{ url_for('fetch_entity') }}?entity=category"><span class="sr-only">Fetch Feeds</span><span class="fa fa-refresh fa-lg"></a>
     {% endif %}
+{% endblock navbar_insert %}
+{% block content %}
+<div class="container-fluid article-list">
+    {% for article in articles %}
+    <div class="panel panel-default">
+        <div class="panel-heading">
+            <strong class="text-info">{{ article.feed.title }}</strong>
+            <small>{{ article.published | datetime }}</small>
+            <p class="pull-right">{% if article.author.name != "none" %}{{ article.author.name }}{% endif %}</p>
+        </div>
+        <a href="{{ article.url }}" target="_blank" class="panel-body">
+            <span class="text-muted">{{ article.title }}</span>
+            {% if article.summary %}{{ article.summary }}{% endif %}
+        </a>
     </div>
-    <div id="article_list">
-        <ul>
-        {% if type == "feed" %}
-            {% for article in articles %}
-            <li><a href="{{ article.url }}" target="_blank">{{ article.title }}</a></li>
-            <ul>
-                {% if article.summary %}<li>{{ article.summary }}</li>{% endif %}
-                <li>Published: {{ article.published | datetime }}</li>
-                {% if article.author.name != "none" %}<li>Author: {{ article.author.name }}</li>{% endif %}
-            </ul>
-            {% endfor %}
-        {% elif type in ["all_feeds", "category", "uncategorized"] %}
-            {% for article in articles %}
-            <li><a href="{{ article.url }}" target="_blank">{{ article.title }}</a></li>
-            <ul>
-                <li>From: <a href="{{ url_for('display') }}?entity=feed&id={{ article.feed.id }}">{{ article.feed.title }}</a></li>
-                {% if article.summary %}<li>{{ article.summary }}</li>{% endif %}
-                <li>Published: {{ article.published | datetime }}</li>
-                {% if article.author.name != "none" %}<li>Author: {{ article.author.name }}</li>{% endif %}
-            </ul>
-            {% endfor %}
-        {% endif %}
-        </ul>
-    </div>
+    {% endfor %}
+</div>
 {% endblock content %}

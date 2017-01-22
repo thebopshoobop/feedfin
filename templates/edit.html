@@ -2,58 +2,73 @@
 {% block title %}
 {% if feed %}Edit Feed{% elif category %}Edit Category{% endif %}
 {% endblock title %}
-{% block content %}
-    <div id="header">
+{% block navbar_insert %}
     {% if feed %}
-        <h1>Edit Feed</h1>
-        <a href="{{ url_for('display') }}?entity=feed&id={{ feed.id }}">View Feed</a>
+        <a class="entity-header navbar-brand" href="{{ url_for('edit_entity') }}?entity=feed&id={{ feed.id }}">Edit Feed</a>
     {% elif category %}
-        <h1>Edit Category</h1>
-        <a href="{{ url_for('display') }}?entity=category&id={{ category.id }}">View Category</a>
+        <a class="entity-header navbar-brand" href="{{ url_for('edit_entity') }}?entity=category&id={{ category.id }}">Edit Category</a>
     {% endif %}
-    </div>
-    <div id="edit_form">
-        <form method="POST" action="{{ url_for('edit_entity') }}">
-        {% if feed %}
-            <input type="hidden" name="entity" value="feed">
-            <input type="hidden" name="id" value="{{ feed.id }}">
-            <dl>
-                <dt>Feed Name:</dt>
-                <dd><input type="text" name="title" value="{{ feed.title }}"></dd>
-                <dt>Feed Address:</dt>
-                <dd><input type="text" name="url" value="{{ feed.url }}"></dd>
-                <dt>Categories:</dt>
-                {% if feed.categories or other_categories %}
-                <dd>
-                {% for c in feed.categories %}
-                    <label><input type="checkbox" name="category" value="{{ c.id }}" checked="checked">{{ c.title }}</label>
-                {% endfor %}
-                {% for c in other_categories %}
-                    <label><input type="checkbox" name="category" value="{{ c.id }}">{{ c.title }}</label>
-                {% endfor %}
-                </dd>
-                {% endif %}
-            </dl>
-        {% elif category %}
-            <input type="hidden" name="entity" value="category">
-            <input type="hidden" name="id" value="{{ category.id }}">
-            <dl>
-                <dt>Category Name:</dt>
-                <dd><input type="text" name="title" value="{{ category.title }}"></dd>
-                <dt>Feeds:</dt>
-                {% if category.feeds or other_feeds %}
-                <dd>
-                {% for f in category.feeds %}
-                    <label><input type="checkbox" name="feed" value="{{ f.id }}" checked="checked">{{ f.title }}</label>
-                {% endfor %}
-                {% for f in other_feeds %}
-                    <label><input type="checkbox" name="feed" value="{{ f.id }}">{{ f.title }}</label>
-                {% endfor %}
-                </dd>
-                {% endif %}
-            </dl>
-        {% endif %}
-            <button type="submit" name="submit" value="delete">Delete</button> <button type="submit" name="submit" value="reset">Reset</button> <button type="submit" name="submit" value="save">Save</button>
+{% endblock navbar_insert %}
+{% block content %}
+<div class="container-fluid">
+    <div class="panel panel-default edit-panel">
+        <div class="panel-body">
+            <form method="POST" action="{{ url_for('edit_entity') }}">
+                {% if feed %}
+                <input type="hidden" name="entity" value="feed">
+                <input type="hidden" name="id" value="{{ feed.id }}">
+                <div class="form-group">
+                    <label for="feed-name">Name</label>
+                    <input type="text" class="form-control" id="feed-name" name="title" value="{{ feed.title }}">
+                </div>
+                <div class="form-group">
+                    <label for="feed-url">Address</label>
+                    <input type="text" class="form-control" id="feed-url" name="url" value="{{ feed.url }}">
+                </div>
+                <div class="form-group">
+                    <label>Categories</label></br>
+                    {% if feed.categories or other_categories %}
+                    {% for c in feed.categories %}
+                    <div class="checkbox-inline">
+                        <label><input type="checkbox" name="category" value="{{ c.id }}" checked="checked">{{ c.title }}</label>
+                    </div>
+                    {% endfor %}
+                    {% for c in other_categories %}
+                    <div class="checkbox-inline">
+                        <label><input type="checkbox" name="category" value="{{ c.id }}">{{ c.title }}</label>
+                    </div>
+                    {% endfor %}
+                    {% endif %}
+                </div>
+            {% elif category %}
+                <input type="hidden" name="entity" value="category">
+                <input type="hidden" name="id" value="{{ category.id }}">
+                <div class="form-group">
+                    <label for="cateogry-name">Name</label>
+                    <input type="text" class="form-control" id="category-name" name=title value="{{ category.title }}">
+                </div>
+                <div class="form-group">
+                    <label>Feeds</label><br>
+                    {% if category.feeds or other_feeds %}
+                    {% for f in category.feeds %}
+                    <div class="checkbox-inline">
+                        <label><input type="checkbox" name="feed" value="{{ f.id }}" checked="checked">{{ f.title }}</label>
+                    </div>
+                    {% endfor %}
+                    {% for f in other_feeds %}
+                    <div class="checkbox-inline">
+                        <label><input type="checkbox" name="feed" value="{{ f.id }}">{{ f.title }}</label>
+                    </div>
+                    {% endfor %}
+                    {% endif %}
+                </div>
+            {% endif %}
+                <div class="btn-group" role="group" aria-label="Form Controls">
+                    <button class="btn btn-default" type="submit" name="submit" value="delete">Delete</button>
+                    <button class="btn btn-default"  type="reset" name="submit" value="reset">Reset</button>
+                    <button class="btn btn-default"  type="submit" name="submit" value="save">Save</button>
+                </div>
         </form>
     </div>
+</div>
 {% endblock content %}

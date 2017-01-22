@@ -174,8 +174,6 @@ def del_entity():
 @app.route('/edit', methods=['POST', 'GET'])
 @orm.db_session
 def edit_entity():
-    print(request.args)
-    print(request.form)
     if not valid_entity():
         print('Warning: Invalid Entity Passed to Edit')
         return redirect(redirect_referrer())
@@ -192,9 +190,8 @@ def edit_entity():
                 return render_template('edit.html', category=category, other_feeds=other_feeds)
 
         elif request.method =='POST':
-            if request.form['submit'] in ['delete', 'reset']:
-                rq = {'delete': 'del_entity', 'reset': 'edit_entity'}
-                return redirect(url_for(rq[request.form['submit']], entity=request.form['entity'], id=request.form['id']))
+            if request.form['submit'] == 'delete':
+                return redirect(url_for('del_entity', entity=request.form['entity'], id=request.form['id']))
 
             elif request.form['submit'] == 'save' and request.form['entity'] == 'feed':
                 feed = Feed[request.form['id']]
