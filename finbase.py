@@ -243,13 +243,9 @@ def redirect_referrer(default='display'):
         return url_for(default)
 
 def valid_entity():
-    if request.method == 'GET':
-        rq = request.args
-    elif request.method == 'POST':
-        rq = request.form
-    else:
-        return False
     try:
+        method_mux = {'GET': request.args, 'POST': request.form}
+        rq = method_mux[request.method]
         return int(rq['id']) >= 0 and rq['entity'] in ['feed', 'category']
     except (ValueError, KeyError):
         return False
