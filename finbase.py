@@ -236,6 +236,18 @@ def fetch_entity():
 
     return redirect(redirect_referrer())
 
+@app.errorhandler(404)
+@orm.db_session
+def page_not_found(e):
+    print(e)
+    return render_template('error.html'), 404
+
+@app.errorhandler(500)
+@orm.db_session
+def internal_server_error(e):
+    print(e)
+    return render_template('error.html'), 500
+
 def redirect_referrer(default='display'):
     if urlparse(url_for(default, _external=True)).netloc == urlparse(request.referrer).netloc:
         return request.referrer
