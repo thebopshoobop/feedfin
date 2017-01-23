@@ -252,25 +252,26 @@ def internal_server_error(e):
     print(e)
     return render_template('error.html'), 500
 
-def missing_entitiy():
-    try:
-        method_mux = {'GET': request.args, 'POST': request.form}
-        rq = method_mux[request.method]
-        flash('Warning: Could not find {} with id {}'.format(rq['entity'], rq['id']))
-    except (KeyError):
-        flash('Warning: Invalid Request Type')
-
-
 def redirect_referrer(default='display'):
     if urlparse(url_for(default, _external=True)).netloc == urlparse(request.referrer).netloc:
         return request.referrer
     else:
         return url_for(default)
 
+def method_mux():
+    mux = {'GET': request.args, 'POST': request.form}
+    return mux[request.method]
+
+def missing_entitiy():
+    try:
+        rq = method_mux()
+        flash('Warning: Could not find {} with id {}'.format(rq['entity'], rq['id']))
+    except (KeyError):
+        flash('Warning: Invalid Request Type')
+
 def valid_entity():
     try:
-        method_mux = {'GET': request.args, 'POST': request.form}
-        rq = method_mux[request.method]
+        rq = method_mux()
         return int(rq['id']) >= 0 and rq['entity'] in ['feed', 'category']
     except (ValueError, KeyError):
         return False
