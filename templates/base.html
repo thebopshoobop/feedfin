@@ -9,14 +9,14 @@
 <div class="navbar navbar-default navbar-fixed-top" role="navigation">
     <div class="container-fluid">
         <div class="navbar-header">
-            <a href=# class="navbar-toggle collapsed visible-xs-block" data-toggle="collapse" data-target="#top-nav-bar" aria-expanded="false">
+            <a href=# class="navbar-toggle collapsed visible-xs-block" data-toggle="collapse" data-target="#navbar-links" aria-expanded="false">
                 <span class="sr-only">Toggle navigation</span>
                 <span class="fa fa-bars fa-lg" aria-hidden="true"></span>
             </a>
             <a class="navbar-brand" href="{{ url_for('display') }}">feedfin</a>
             {% block navbar_insert %}
             {% endblock navbar_insert %}
-            <div class="collapse navbar-collapse" id="top-nav-bar">
+            <div class="collapse navbar-collapse" id="navbar-links">
                 <ul class="nav navbar-nav">
                     {% for category in nav_categories %}
                     <li class="dropdown">

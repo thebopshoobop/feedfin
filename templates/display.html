@@ -31,10 +31,10 @@
 <div class="container-fluid article-list">
     {% for article in articles %}
     <div class="panel panel-default">
-        <div class="panel-heading">
+        <div class="panel-heading clearfix">
             <strong class="text-info">{{ article.feed.title }}</strong>
             <small>{{ moment(article.published).format("dddd h:mma") }}</small>
-            <p class="pull-right">{% if article.author.name != "none" %}{{ article.author.name }}{% endif %}</p>
+            <span class="pull-right">{% if article.author.name != "none" %}{{ article.author.name }}{% endif %}</span>
         </div>
         <a href="{{ article.url }}" target="_blank" class="panel-body">
             <span class="text-muted">{{ article.title }}</span>

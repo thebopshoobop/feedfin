@@ -9,6 +9,13 @@ body {
     float: none;
 }
 
+/* except when we need it to on small screens */
+@media (max-width: 768px) {
+    #navbar-links {
+        margin-top: 50px;
+    }
+}
+
 /* remove ugly button border, always display buttons, make button margin & padding match navbar-brand */
 .navbar-toggle {
     border: none;
