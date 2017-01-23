@@ -1,7 +1,7 @@
 from pony import orm
 from datetime import datetime
 import feedparser
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, flash
 from urllib.parse import urlparse
 from bs4 import BeautifulSoup, Comment
 from flask_bootstrap import Bootstrap
@@ -12,6 +12,7 @@ db = orm.Database()
 db.bind('sqlite', 'fbdb.sqlite', create_db=True)
 
 app = Flask(__name__)
+app.config['SECRET_KEY'] = 'TcAnhkN0z4F2loeqVA8IHw6Hw5iU10n1bgxcigeZdk27sMRm8oGlrw5EUENgd8vo'
 bootstrap = Bootstrap(app)
 moment = Moment(app)
 
@@ -118,23 +119,26 @@ def settings():
 @app.route('/')
 @orm.db_session
 def display():
-    try:
-        if not 'entity' in request.args:
-            articles = list(Article.select().order_by(orm.desc(Article.published)))
-            return render_template('display.html', type='all_feeds', articles=articles)
-        elif request.args['entity'] == 'category' and 'id' not in request.args:
-            articles = list(orm.select(a for a in Article if not a.feed.categories).order_by(orm.desc(Article.published)))
-            return render_template('display.html', type='uncategorized', articles=articles)
-        elif valid_entity() and request.args['entity'] == 'category':
-            category = Category[request.args['id']]
-            articles = list(orm.select(a for a in Article if a.feed in category.feeds).order_by(orm.desc(Article.published)))
-            return render_template('display.html', type='category', category=category, articles=articles)
-        elif valid_entity() and request.args['entity'] == 'feed':
-            feed = Feed[request.args['id']]
-            articles = list(orm.select(a for a in Article if a.feed is feed).order_by(orm.desc(Article.published)))
-            return render_template('display.html', type='feed', feed=feed, articles=articles)
-    except orm.ObjectNotFound:
-        return render_template('missing.html', entity=request.args['entity'], id=request.args['id'])
+    if not valid_entity():
+        flash('Warning: Invalid Feed/Category')
+    else:
+        try:
+            if not 'entity' in request.args:
+                articles = list(Article.select().order_by(orm.desc(Article.published)))
+                return render_template('display.html', type='all_feeds', articles=articles)
+            elif request.args['entity'] == 'category' and 'id' not in request.args:
+                articles = list(orm.select(a for a in Article if not a.feed.categories).order_by(orm.desc(Article.published)))
+                return render_template('display.html', type='uncategorized', articles=articles)
+            elif valid_entity() and request.args['entity'] == 'category':
+                category = Category[request.args['id']]
+                articles = list(orm.select(a for a in Article if a.feed in category.feeds).order_by(orm.desc(Article.published)))
+                return render_template('display.html', type='category', category=category, articles=articles)
+            elif valid_entity() and request.args['entity'] == 'feed':
+                feed = Feed[request.args['id']]
+                articles = list(orm.select(a for a in Article if a.feed is feed).order_by(orm.desc(Article.published)))
+                return render_template('display.html', type='feed', feed=feed, articles=articles)
+        except orm.ObjectNotFound:
+            missing_entitiy()
 
     return redirect(redirect_referrer())
 
@@ -152,7 +156,7 @@ def add_entity():
         if not Category.get(title=title):
             new_category = Category(title=title)
 
-    return redirect(redirect_referrer())
+    return redirect(url_for('settings'))
 
 @app.route('/del')
 @orm.db_session
@@ -163,8 +167,9 @@ def del_entity():
                 Feed[request.args['id']].delete()
             elif request.args['entity'] == 'category':
                 Category[request.args['id']].delete()
+            flash('Sucess!')
         except orm.ObjectNotFound:
-            return render_template('missing.html', entity=request.args['entity'], id=request.args['id'])
+            missing_entitiy()
 
     return redirect(url_for('settings'))
 
@@ -172,8 +177,7 @@ def del_entity():
 @orm.db_session
 def edit_entity():
     if not valid_entity():
-        print('Warning: Invalid Entity Passed to Edit')
-        return redirect(redirect_referrer())
+        flash('Warning: Invalid Edit Parameter(s)')
     try:
         if request.method == 'GET':
             if request.args['entity'] == 'feed':
@@ -196,19 +200,22 @@ def edit_entity():
                 feed.url = request.form['url']
                 feed.categories.clear()
                 [feed.categories.add(Category[c]) for c in list(request.form.getlist('category'))]
-                return redirect(url_for('settings'))
+                flash('Success!')
 
             elif request.form['submit'] == 'save' and request.form['entity'] == 'category':
                 category = Category[request.form['id']]
                 category.title = request.form['title']
                 category.feeds.clear()
                 [category.feeds.add(Feed[f]) for f in list(request.form.getlist('feed'))]
-                return redirect(url_for('settings'))
+                flash('Success')
+
+            else:
+                flash('Warning: Improper Edit Submission')
 
     except orm.ObjectNotFound:
-        return render_template('missing.html', entity=request.args['entity'], id=request.args['id'])
+        missing_entitiy()
 
-    return redirect(redirect_referrer())
+    return redirect(url_for('settings'))
 
 @app.route('/fetch')
 @orm.db_session
@@ -226,10 +233,10 @@ def fetch_entity():
         elif valid_entity() and request.args['entity'] == 'feed':
             fetch_feed(request.args['id'])
         else:
-            print('Warning: Failed Fetch')
+            flash('Warning: Failed Fetch')
 
     except orm.ObjectNotFound:
-        return render_template('missing.html', entity=request.args['entity'], id=request.args['id'])
+        missing_entitiy()
 
     return redirect(redirect_referrer())
 
@@ -244,6 +251,15 @@ def page_not_found(e):
 def internal_server_error(e):
     print(e)
     return render_template('error.html'), 500
+
+def missing_entitiy():
+    try:
+        method_mux = {'GET': request.args, 'POST': request.form}
+        rq = method_mux[request.method]
+        flash('Warning: Could not find {} with id {}'.format(rq['entity'], rq['id']))
+    except (KeyError):
+        flash('Warning: Invalid Request Type')
+
 
 def redirect_referrer(default='display'):
     if urlparse(url_for(default, _external=True)).netloc == urlparse(request.referrer).netloc:

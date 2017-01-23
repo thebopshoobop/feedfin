@@ -6,8 +6,8 @@
 <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
 {% endblock styles %}
 {% block navbar %}
-<div class="navbar navbar-default navbar-fixed-top" role="navigation">
-    <div class="container-fluid">
+<div class="container-fluid">
+    <div class="navbar navbar-default navbar-fixed-top" role="navigation">
         <div class="navbar-header">
             <a href=# class="navbar-toggle collapsed visible-xs-block" data-toggle="collapse" data-target="#navbar-links" aria-expanded="false">
                 <span class="sr-only">Toggle navigation</span>
@@ -47,6 +47,14 @@
             </div>
         </div>
     </div>
+</div>
+<div class="container-fluid">
+    {% for message in get_flashed_messages() %}
+    <div class="alert alert-warning">
+        <button type="button" class="close" data-dismiss="alert"><span class="fa fa-times-circle" aria-hidden="true"></span></button>
+        {{ message }}
+    </div>
+    {% endfor %}
 </div>
 {% endblock navbar %}
 {% block scripts %}
