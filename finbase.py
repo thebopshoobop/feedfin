@@ -5,6 +5,7 @@ from flask import Flask, render_template, request, redirect, url_for
 from urllib.parse import urlparse
 from bs4 import BeautifulSoup, Comment
 from flask_bootstrap import Bootstrap
+from flask_moment import Moment
 
 db = orm.Database()
 #orm.sql_debug(True)
@@ -12,6 +13,7 @@ db.bind('sqlite', 'fbdb.sqlite', create_db=True)
 
 app = Flask(__name__)
 bootstrap = Bootstrap(app)
+moment = Moment(app)
 
 class Feed(db.Entity):
     id = orm.PrimaryKey(int, auto=True)
@@ -99,11 +101,6 @@ def visible(element):
     elif isinstance(element, Comment):
         return False
     return True
-
-@app.template_filter('datetime')
-def format_datetime(value, format='full'):
-    formats = {'full': '%m/%d/%Y %I:%M%p', 'date': '%m/%d/%Y', 'time': '%I:%M%p'}
-    return value.strftime(formats[format])
 
 @app.context_processor
 @orm.db_session
@@ -199,14 +196,14 @@ def edit_entity():
                 feed.url = request.form['url']
                 feed.categories.clear()
                 [feed.categories.add(Category[c]) for c in list(request.form.getlist('category'))]
-                return redirect(redirect_referrer())
+                return redirect(url_for('settings'))
 
             elif request.form['submit'] == 'save' and request.form['entity'] == 'category':
                 category = Category[request.form['id']]
                 category.title = request.form['title']
                 category.feeds.clear()
                 [category.feeds.add(Feed[f]) for f in list(request.form.getlist('feed'))]
-                return redirect(redirect_referrer())
+                return redirect(url_for('settings'))
 
     except orm.ObjectNotFound:
         return render_template('missing.html', entity=request.args['entity'], id=request.args['id'])

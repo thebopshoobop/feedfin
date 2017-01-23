@@ -49,3 +49,7 @@
     </div>
 </div>
 {% endblock navbar %}
+{% block scripts %}
+{{ super() }}
+{{ moment.include_moment() }}
+{% endblock scripts %}

@@ -33,7 +33,7 @@
     <div class="panel panel-default">
         <div class="panel-heading">
             <strong class="text-info">{{ article.feed.title }}</strong>
-            <small>{{ article.published | datetime }}</small>
+            <small>{{ moment(article.published).format("dddd h:mma") }}</small>
             <p class="pull-right">{% if article.author.name != "none" %}{{ article.author.name }}{% endif %}</p>
         </div>
         <a href="{{ article.url }}" target="_blank" class="panel-body">

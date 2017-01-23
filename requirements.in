@@ -4,3 +4,4 @@ feedparser
 flask
 beautifulsoup4
 flask-bootstrap
+flask-moment
