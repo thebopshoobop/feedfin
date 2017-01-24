@@ -119,26 +119,26 @@ def settings():
 @app.route('/')
 @orm.db_session
 def display():
+    try:
+        if not 'entity' in request.args:
+            articles = list(Article.select().order_by(orm.desc(Article.published)))
+            return render_template('display.html', type='all_feeds', articles=articles)
+        elif request.args['entity'] == 'category' and 'id' not in request.args:
+            articles = list(orm.select(a for a in Article if not a.feed.categories).order_by(orm.desc(Article.published)))
+            return render_template('display.html', type='uncategorized', articles=articles)
+        elif valid_entity() and request.args['entity'] == 'category':
+            category = Category[request.args['id']]
+            articles = list(orm.select(a for a in Article if a.feed in category.feeds).order_by(orm.desc(Article.published)))
+            return render_template('display.html', type='category', category=category, articles=articles)
+        elif valid_entity() and request.args['entity'] == 'feed':
+            feed = Feed[request.args['id']]
+            articles = list(orm.select(a for a in Article if a.feed is feed).order_by(orm.desc(Article.published)))
+            return render_template('display.html', type='feed', feed=feed, articles=articles)
+    except orm.ObjectNotFound:
+        missing_entitiy()
+
     if not valid_entity():
         flash('Warning: Invalid Feed/Category')
-    else:
-        try:
-            if not 'entity' in request.args:
-                articles = list(Article.select().order_by(orm.desc(Article.published)))
-                return render_template('display.html', type='all_feeds', articles=articles)
-            elif request.args['entity'] == 'category' and 'id' not in request.args:
-                articles = list(orm.select(a for a in Article if not a.feed.categories).order_by(orm.desc(Article.published)))
-                return render_template('display.html', type='uncategorized', articles=articles)
-            elif valid_entity() and request.args['entity'] == 'category':
-                category = Category[request.args['id']]
-                articles = list(orm.select(a for a in Article if a.feed in category.feeds).order_by(orm.desc(Article.published)))
-                return render_template('display.html', type='category', category=category, articles=articles)
-            elif valid_entity() and request.args['entity'] == 'feed':
-                feed = Feed[request.args['id']]
-                articles = list(orm.select(a for a in Article if a.feed is feed).order_by(orm.desc(Article.published)))
-                return render_template('display.html', type='feed', feed=feed, articles=articles)
-        except orm.ObjectNotFound:
-            missing_entitiy()
 
     return redirect(redirect_referrer())
 
