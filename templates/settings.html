@@ -32,8 +32,18 @@
                     <form method="POST" action="{{ url_for('add_entity') }}">
                         <div class="form-group">
                             <input type="hidden" name="entity" value="feed">
-                            <label for="feed-input">Add Feed</label>
+                            <label for="feed-input"><h5 class="text-muted">Add Feed<h5></label>
                         </div>
+                        {% if nav_categories %}
+                        <div class="form-group">
+                            <label>Categories</label></br>
+                            {% for c in nav_categories %}
+                            <div class="checkbox-inline">
+                                <label><input type="checkbox" name="category" value="{{ c.id }}">{{ c.title }}</label>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
                         <div class="input-group">
                             <input type="url" class="form-control" name="url" id="feed-input" placeholder="http://">
                             <span class="input-group-btn">
@@ -69,8 +79,18 @@
                     <form method="POST" action="{{ url_for('add_entity') }}">
                         <div class="form-group">
                             <input type="hidden" name="entity" value="category">
-                            <label for="category-input">Add Category</label>
+                            <label for="category-input"><h5 class="text-muted">Add Category</h5></label>
                         </div>
+                        {% if nav_feeds %}
+                        <div class="form-group">
+                            <label>Feeds</label><br>
+                            {% for f in nav_feeds %}
+                            <div class="checkbox-inline">
+                                <label><input type="checkbox" name="feed" value="{{ f.id }}">{{ f.title }}</label>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
                         <div class="input-group">
                             <input type="text" class="form-control" name="category" id="category-input" placeholder="Category Name">
                             <span class="input-group-btn">

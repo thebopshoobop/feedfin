@@ -258,10 +258,12 @@ def add_entity():
             p = feedparser.parse(url)
             title = p.feed.title if 'title' in p.feed else url
             new_feed = Feed(title=title, url=url)
+            [new_feed.categories.add(Category[c]) for c in list(request.values.getlist('category'))]
     elif request.values['entity'] == 'category' and request.values['category']:
         title = request.values['category']
         if not Category.get(title=title):
             new_category = Category(title=title)
+            [new_category.feeds.add(Feed[f]) for f in list(request.values.getlist('feed'))]
 
     return redirect(url_for('settings'))
 
