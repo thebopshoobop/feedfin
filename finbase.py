@@ -145,13 +145,13 @@ def register():
         return redirect(next)
     else:
         if request.method == 'POST':
-            if not request.form['username'] or not request.form['password']:
+            if not request.values['username'] or not request.values['password']:
                 flash('Username and Password are both required')
             else:
-                new_user = add_user(request.form['username'], request.form['password'])
+                new_user = add_user(request.values['username'], request.values['password'])
                 if new_user:
                     flash('New user {} successfully registered'.format(new_user.username))
-                    remember = 'remember_me' in request.form
+                    remember = 'remember_me' in request.values
                     login_user(new_user, remember=remember)
                     flash('Login Successful!')
                     return redirect(url_for('settings'))
@@ -168,13 +168,13 @@ def login():
         return redirect(url_for('register', next=next))
     else:
         if request.method == 'POST':
-            if not request.form['username'] or not request.form['password']:
+            if not request.values['username'] or not request.values['password']:
                 flash('Username and Password are both required')
             else:
-                user = User.get(username=request.form['username'])
-                password = request.form['password']
+                user = User.get(username=request.values['username'])
+                password = request.values['password']
                 if user and password and check_password_hash(user.password_hash, password):
-                    remember = 'remember_me' in request.form
+                    remember = 'remember_me' in request.values
                     login_user(user, remember=remember)
                     flash('Login Successful!')
                 else:
@@ -196,13 +196,13 @@ def logout():
 @login_required
 def edit_user():
     next = get_redirect_target()
-    if 'username' in request.form:
+    if 'username' in request.values:
         user = list(User.select())[0]
-        user.username = request.form['username']
-    elif 'password' in request.form:
+        user.username = request.values['username']
+    elif 'password' in request.values:
         user = list(User.select())[0]
-        user.password_hash = generate_password_hash(request.form['password'])
-    elif 'delete' in request.form:
+        user.password_hash = generate_password_hash(request.values['password'])
+    elif 'delete' in request.values:
         logout_user()
         for user in User.select():
             user.delete()
@@ -226,18 +226,18 @@ def settings():
 @login_required
 def display():
     try:
-        if not 'entity' in request.args:
+        if not 'entity' in request.values:
             articles = list(Article.select().order_by(orm.desc(Article.published)))
             return render_template('display.html', type='all_feeds', articles=articles)
-        elif request.args['entity'] == 'category' and 'id' not in request.args:
+        elif request.values['entity'] == 'category' and 'id' not in request.values:
             articles = list(orm.select(a for a in Article if not a.feed.categories).order_by(orm.desc(Article.published)))
             return render_template('display.html', type='uncategorized', articles=articles)
-        elif valid_entity() and request.args['entity'] == 'category':
-            category = Category[request.args['id']]
+        elif valid_entity() and request.values['entity'] == 'category':
+            category = Category[request.values['id']]
             articles = list(orm.select(a for a in Article if a.feed in category.feeds).order_by(orm.desc(Article.published)))
             return render_template('display.html', type='category', category=category, articles=articles)
-        elif valid_entity() and request.args['entity'] == 'feed':
-            feed = Feed[request.args['id']]
+        elif valid_entity() and request.values['entity'] == 'feed':
+            feed = Feed[request.values['id']]
             articles = list(orm.select(a for a in Article if a.feed is feed).order_by(orm.desc(Article.published)))
             return render_template('display.html', type='feed', feed=feed, articles=articles)
     except orm.ObjectNotFound:
@@ -252,14 +252,14 @@ def display():
 @orm.db_session
 @login_required
 def add_entity():
-    if request.form['entity'] == 'feed' and request.form['url']:
-        url = request.form['url']
+    if request.values['entity'] == 'feed' and request.values['url']:
+        url = request.values['url']
         if not Feed.get(url=url):
             p = feedparser.parse(url)
             title = p.feed.title if 'title' in p.feed else url
             new_feed = Feed(title=title, url=url)
-    elif request.form['entity'] == 'category' and request.form['category']:
-        title = request.form['category']
+    elif request.values['entity'] == 'category' and request.values['category']:
+        title = request.values['category']
         if not Category.get(title=title):
             new_category = Category(title=title)
 
@@ -271,10 +271,10 @@ def add_entity():
 def del_entity():
     if valid_entity():
         try:
-            if request.args['entity'] == 'feed':
-                Feed[request.args['id']].delete()
-            elif request.args['entity'] == 'category':
-                Category[request.args['id']].delete()
+            if request.values['entity'] == 'feed':
+                Feed[request.values['id']].delete()
+            elif request.values['entity'] == 'category':
+                Category[request.values['id']].delete()
             flash('Sucess!')
         except orm.ObjectNotFound:
             missing_entitiy()
@@ -289,33 +289,33 @@ def edit_entity():
         flash('Warning: Invalid Edit Parameter(s)')
     try:
         if request.method == 'GET':
-            if request.args['entity'] == 'feed':
-                feed=Feed[request.args['id']]
+            if request.values['entity'] == 'feed':
+                feed=Feed[request.values['id']]
                 other_categories = list(orm.select(c for c in Category if c not in feed.categories))
                 return render_template('edit.html', feed=feed, other_categories=other_categories)
 
-            elif request.args['entity'] == 'category':
-                category = Category[request.args['id']]
+            elif request.values['entity'] == 'category':
+                category = Category[request.values['id']]
                 other_feeds = list(orm.select(f for f in Feed if f not in category.feeds))
                 return render_template('edit.html', category=category, other_feeds=other_feeds)
 
         elif request.method =='POST':
-            if request.form['submit'] == 'delete':
-                return redirect(url_for('del_entity', entity=request.form['entity'], id=request.form['id']))
+            if request.values['submit'] == 'delete':
+                return redirect(url_for('del_entity', entity=request.values['entity'], id=request.values['id']))
 
-            elif request.form['submit'] == 'save' and request.form['entity'] == 'feed':
-                feed = Feed[request.form['id']]
-                feed.title = request.form['title']
-                feed.url = request.form['url']
+            elif request.values['submit'] == 'save' and request.values['entity'] == 'feed':
+                feed = Feed[request.values['id']]
+                feed.title = request.values['title']
+                feed.url = request.values['url']
                 feed.categories.clear()
-                [feed.categories.add(Category[c]) for c in list(request.form.getlist('category'))]
+                [feed.categories.add(Category[c]) for c in list(request.values.getlist('category'))]
                 flash('Success!')
 
-            elif request.form['submit'] == 'save' and request.form['entity'] == 'category':
-                category = Category[request.form['id']]
-                category.title = request.form['title']
+            elif request.values['submit'] == 'save' and request.values['entity'] == 'category':
+                category = Category[request.values['id']]
+                category.title = request.values['title']
                 category.feeds.clear()
-                [category.feeds.add(Feed[f]) for f in list(request.form.getlist('feed'))]
+                [category.feeds.add(Feed[f]) for f in list(request.values.getlist('feed'))]
                 flash('Success')
 
             else:
@@ -331,17 +331,17 @@ def edit_entity():
 @login_required
 def fetch_entity():
     try:
-        if not 'entity' in request.args:
+        if not 'entity' in request.values:
             for feed_id in orm.select(f.id for f in Feed):
                 fetch_feed(feed_id)
-        elif request.args['entity'] == 'category' and 'id' not in request.args:
+        elif request.values['entity'] == 'category' and 'id' not in request.values:
             for feed in orm.select(f for f in Feed if not f.categories):
                 fetch_feed(feed.id)
-        elif valid_entity() and request.args['entity'] == 'category':
-            for feed in Category[request.args['id']].feeds:
+        elif valid_entity() and request.values['entity'] == 'category':
+            for feed in Category[request.values['id']].feeds:
                 fetch_feed(feed.id)
-        elif valid_entity() and request.args['entity'] == 'feed':
-            fetch_feed(request.args['id'])
+        elif valid_entity() and request.values['entity'] == 'feed':
+            fetch_feed(request.values['id'])
         else:
             flash('Warning: Failed Fetch')
 
@@ -374,20 +374,14 @@ def get_redirect_target(default='display'):
         if is_safe_url(target):
             return target
 
-def method_mux():
-    mux = {'GET': request.args, 'POST': request.form}
-    return mux[request.method]
-
 def missing_entitiy():
     try:
-        rq = method_mux()
-        flash('Warning: Could not find {} with id {}'.format(rq['entity'], rq['id']))
+        flash('Warning: Could not find {} with id {}'.format(request.values['entity'], request.values['id']))
     except (KeyError):
         flash('Warning: Invalid Request Type')
 
 def valid_entity():
     try:
-        rq = method_mux()
-        return int(rq['id']) >= 0 and rq['entity'] in ['feed', 'category']
+        return int(request.values['id']) >= 0 and request.values['entity'] in ['feed', 'category']
     except (ValueError, KeyError):
         return False
