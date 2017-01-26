@@ -82,7 +82,7 @@ def fetch_feed(id):
     feed.etag = p.etag if 'etag' in p else ''
     feed.modified = p.modified if 'modified' in p else ''
     for e in p.entries if 'entries' in p else []:
-        author = Author[add_author(e.author)] if 'author' in e and e.author else Author[add_author('None')]
+        author = Author[add_author(e.author.title())] if 'author' in e and e.author else Author[add_author('None')]
         title = e.title if 'title' in e else ''
         url = e.link if 'link' in e else feed.url
         published = datetime(*e.published_parsed[:6]) if 'published_parsed' in e else datetime.utcnow()
