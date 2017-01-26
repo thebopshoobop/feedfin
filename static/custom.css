@@ -41,7 +41,11 @@ a.panel-body {
 }
 
 /* limit article-list to a reasonable width */
-.article-list,
-.edit-panel {
+.article-list {
     max-width: 60em;
+}
+
+.edit-panel,
+.login-panel {
+    max-width: 40em;
 }

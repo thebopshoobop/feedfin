@@ -2,19 +2,22 @@ from pony import orm
 from datetime import datetime
 import feedparser
 from flask import Flask, render_template, request, redirect, url_for, flash
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urljoin
 from bs4 import BeautifulSoup, Comment
 from flask_bootstrap import Bootstrap
 from flask_moment import Moment
+from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required
+from werkzeug.security import generate_password_hash, check_password_hash
 
 db = orm.Database()
-#orm.sql_debug(True)
 db.bind('sqlite', 'fbdb.sqlite', create_db=True)
-
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'TcAnhkN0z4F2loeqVA8IHw6Hw5iU10n1bgxcigeZdk27sMRm8oGlrw5EUENgd8vo'
 bootstrap = Bootstrap(app)
 moment = Moment(app)
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'login'
 
 class Feed(db.Entity):
     id = orm.PrimaryKey(int, auto=True)
@@ -44,6 +47,11 @@ class Author(db.Entity):
     id = orm.PrimaryKey(int, auto=True)
     name = orm.Required(str, unique=True)
     articles = orm.Set('Article')
+
+class User(UserMixin, db.Entity):
+    id = orm.PrimaryKey(int, auto=True)
+    username = orm.Required(str, unique=True)
+    password_hash = orm.Required(str, unique=True)
 
 db.generate_mapping(create_tables=True)
 
@@ -103,21 +111,119 @@ def visible(element):
         return False
     return True
 
+@login_manager.user_loader
+@orm.db_session
+def load_user(user_id):
+    return User.get(id=user_id)
+
+@orm.db_session
+def add_user(username, password):
+    exists=User.get()
+    if exists:
+        return False
+    else:
+        password_hash = generate_password_hash(password)
+        new_user = User(username=username, password_hash=password_hash)
+        orm.commit()
+        return new_user
+
 @app.context_processor
 @orm.db_session
 def nav_variables():
     feeds = list(Feed.select())
     uncategorized = list(Feed.select(lambda u: not u.categories))
     categories = list(Category.select())
-    return dict(nav_feeds=feeds, nav_uncategorized=uncategorized, nav_categories=categories)
+    users = list(User.select())
+    username = users[0].username if users else ''
+    return dict(nav_feeds=feeds, nav_uncategorized=uncategorized, nav_categories=categories, username=username)
+
+@app.route('/register', methods=['GET', 'POST'])
+@orm.db_session
+def register():
+    next = get_redirect_target()
+    if len(list(User.select())) > 0:
+        return redirect(next)
+    else:
+        if request.method == 'POST':
+            if not request.form['username'] or not request.form['password']:
+                flash('Username and Password are both required')
+            else:
+                new_user = add_user(request.form['username'], request.form['password'])
+                if new_user:
+                    flash('New user {} successfully registered'.format(new_user.username))
+                    remember = 'remember_me' in request.form
+                    login_user(new_user, remember=remember)
+                    flash('Login Successful!')
+                    return redirect(url_for('settings'))
+                else:
+                    flash('Warning: failed to register user')
+
+        return render_template('register.html', next=next)
+
+@app.route('/login', methods=['GET', 'POST'])
+@orm.db_session
+def login():
+    next = get_redirect_target()
+    if len(list(User.select())) == 0:
+        return redirect(url_for('register', next=next))
+    else:
+        if request.method == 'POST':
+            if not request.form['username'] or not request.form['password']:
+                flash('Username and Password are both required')
+            else:
+                user = User.get(username=request.form['username'])
+                password = request.form['password']
+                if user and password and check_password_hash(user.password_hash, password):
+                    remember = 'remember_me' in request.form
+                    login_user(user, remember=remember)
+                    flash('Login Successful!')
+                else:
+                    flash('Incorrect Username or Password')
+
+            return redirect(next)
+
+        return render_template('login.html', next=next)
+
+@app.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    flash('You have been logged out')
+    return redirect(get_redirect_target())
+
+@app.route('/edit_user', methods=['POST'])
+@orm.db_session
+@login_required
+def edit_user():
+    next = get_redirect_target()
+    if 'username' in request.form:
+        user = list(User.select())[0]
+        user.username = request.form['username']
+    elif 'password' in request.form:
+        user = list(User.select())[0]
+        user.password_hash = generate_password_hash(request.form['password'])
+    elif 'delete' in request.form:
+        logout_user()
+        for user in User.select():
+            user.delete()
+        for category in Category.select():
+            category.delete()
+        for article in Article.select():
+            article.delete()
+        for feed in Feed.select():
+            feed.delete()
+
+    return redirect(next)
 
 @app.route('/settings')
 @orm.db_session
+@login_required
 def settings():
     return render_template('settings.html')
 
 @app.route('/')
 @orm.db_session
+@login_required
 def display():
     try:
         if not 'entity' in request.args:
@@ -140,10 +246,11 @@ def display():
     if not valid_entity():
         flash('Warning: Invalid Feed/Category')
 
-    return redirect(redirect_referrer())
+    return redirect(get_redirect_target())
 
 @app.route('/add', methods=['POST'])
 @orm.db_session
+@login_required
 def add_entity():
     if request.form['entity'] == 'feed' and request.form['url']:
         url = request.form['url']
@@ -160,6 +267,7 @@ def add_entity():
 
 @app.route('/del')
 @orm.db_session
+@login_required
 def del_entity():
     if valid_entity():
         try:
@@ -175,6 +283,7 @@ def del_entity():
 
 @app.route('/edit', methods=['POST', 'GET'])
 @orm.db_session
+@login_required
 def edit_entity():
     if not valid_entity():
         flash('Warning: Invalid Edit Parameter(s)')
@@ -219,6 +328,7 @@ def edit_entity():
 
 @app.route('/fetch')
 @orm.db_session
+@login_required
 def fetch_entity():
     try:
         if not 'entity' in request.args:
@@ -238,7 +348,7 @@ def fetch_entity():
     except orm.ObjectNotFound:
         missing_entitiy()
 
-    return redirect(redirect_referrer())
+    return redirect(get_redirect_target())
 
 @app.errorhandler(404)
 @orm.db_session
@@ -252,11 +362,17 @@ def internal_server_error(e):
     print(e)
     return render_template('error.html'), 500
 
-def redirect_referrer(default='display'):
-    if urlparse(url_for(default, _external=True)).netloc == urlparse(request.referrer).netloc:
-        return request.referrer
-    else:
-        return url_for(default)
+def is_safe_url(target):
+    ref_url = urlparse(url_for('display', _external=True))
+    test_url = urlparse(urljoin(request.host_url, target))
+    return test_url.scheme in ('http', 'https') and ref_url.netloc == test_url.netloc
+
+def get_redirect_target(default='display'):
+    for target in request.values.get('next'), request.referrer, url_for(default):
+        if not target:
+            continue
+        if is_safe_url(target):
+            return target
 
 def method_mux():
     mux = {'GET': request.args, 'POST': request.form}
