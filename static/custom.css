@@ -45,7 +45,18 @@ a.panel-body {
     max-width: 60em;
 }
 
+/* limit edit/login/register panels to a reasonable width */
 .edit-panel,
 .login-panel {
     max-width: 40em;
+}
+
+/* tweak checkbox padding */
+.checkbox-inline {
+    margin-left: 10px;
+}
+
+/* squish form padding*/
+.form-group {
+    margin-bottom: 0px;
 }

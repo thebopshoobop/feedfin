@@ -17,7 +17,7 @@
                             <div class="row">
                                 <div class="col-xs-6">
                                     <a href="{{ url_for('display') }}?entity=feed&id={{ feed.id }}">
-                                        <h5 class="text-muted">{{ feed.title }}</h5>
+                                        <h6 class="text-muted">{{ feed.title }}</h6>
                                     </a>
                                 </div>
                                 <div class="btn-group col-xs-6" role="group" aria-label="Delete or Edit">
@@ -44,11 +44,14 @@
                             {% endfor %}
                         </div>
                         {% endif %}
-                        <div class="input-group">
-                            <input type="url" class="form-control" name="url" id="feed-input" placeholder="http://">
-                            <span class="input-group-btn">
-                                <input class="btn btn-default" type="submit" value="Add">
-                            </span>
+                        <div class="form-group">
+                            <label>Feed Address</label>
+                            <div class="input-group">
+                                <input type="url" class="form-control" name="url" id="feed-input" placeholder="http://">
+                                <span class="input-group-btn">
+                                    <input class="btn btn-default" type="submit" value="Add">
+                                </span>
+                            </div>
                         </div>
                     </form>
                 </div>
@@ -65,7 +68,7 @@
                             <div class="row">
                                 <div class="col-xs-6">
                                     <a href="{{ url_for('display') }}?entity=category&id={{ category.id }}">
-                                        <h5 class="text-muted">{{ category.title }}</h5>
+                                        <h6 class="text-muted">{{ category.title }}</h6>
                                     </a>
                                 </div>
                                 <div class="btn-group col-xs-6" roles="group" aria-label="Delete or Edit">
@@ -91,11 +94,14 @@
                             {% endfor %}
                         </div>
                         {% endif %}
-                        <div class="input-group">
-                            <input type="text" class="form-control" name="category" id="category-input" placeholder="Category Name">
-                            <span class="input-group-btn">
-                                <input class="btn btn-default" type="submit" value="Add">
-                            </span>
+                        <div class="form-group">
+                            <label>Category Name</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" name="category" id="category-input">
+                                <span class="input-group-btn">
+                                    <input class="btn btn-default" type="submit" value="Add">
+                                </span>
+                            </div>
                         </div>
                     </form>
                 </div>
