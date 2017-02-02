@@ -6,3 +6,4 @@ beautifulsoup4
 flask-bootstrap
 flask-moment
 flask-login
+gunicorn
