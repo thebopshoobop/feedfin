@@ -3,7 +3,8 @@ Description=Your friendly local feed aggregator
 After=network.target
 
 [Service]
-ExecStart=/var/www/feedfin/venv/bin/gunicorn -w4 -b 127.0.0.1:8000 feedfin:app
+WorkingDirectory=/home/feedfin/feedfin
+ExecStart=/home/feedfin/feedfin/venv/bin/gunicorn -w4 -b 0.0.0.0:8000 feedfin:app
 Type=Simple
 User=feedfin
 Group=feedfin
