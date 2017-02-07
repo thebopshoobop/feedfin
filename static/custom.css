@@ -60,3 +60,16 @@ a.panel-body {
 .form-group {
     margin-bottom: 0px;
 }
+
+/* kep articles from underlining */
+.article-panel:hover {
+    text-decoration: none;
+}
+
+/* show the user that the article-panels are links */
+.article-panel .panel {
+    cursor: pointer;
+}
+.article-panel .panel:hover {
+    box-shadow: 1px 3px #36393E;
+}

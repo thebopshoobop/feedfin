@@ -30,17 +30,19 @@
 {% block content %}
 <div class="container-fluid article-list">
     {% for article in articles %}
-    <div class="panel panel-default">
-        <div class="panel-heading clearfix">
-            <strong class="text-info">{{ article.feed.title }}</strong>
-            <small>{{ moment(article.published).format("dddd h:mma") }}</small>
-            <span class="pull-right text-lowercase text-capitalize">{% if article.author.name != "none" %}{{ article.author.name }}{% endif %}</span>
+    <a href="{{ article.url }}" target="_blank" class='article-panel'>
+        <div class="panel panel-default">
+            <div class="panel-heading clearfix">
+                <strong class="text-info">{{ article.feed.title }}</strong>
+                <small>{{ moment(article.published).format("dddd h:mma") }}</small>
+                <span class="pull-right text-lowercase text-capitalize">{% if article.author.name != "none" %}{{ article.author.name }}{% endif %}</span>
+            </div>
+            <div class="panel-body">
+                <span class="text-muted">{{ article.title }}</span>
+                {% if article.summary %}{{ article.summary }}{% endif %}
+            </div>
         </div>
-        <a href="{{ article.url }}" target="_blank" class="panel-body">
-            <span class="text-muted">{{ article.title }}</span>
-            {% if article.summary %}{{ article.summary }}{% endif %}
-        </a>
-    </div>
+    </a>
     {% endfor %}
 </div>
 {% endblock content %}
