@@ -157,10 +157,10 @@ def add_user(username, password):
 @app.context_processor
 @orm.db_session
 def nav_variables():
-    feeds = list(Feed.select())
-    uncategorized = list(Feed.select(lambda u: not u.categories))
-    categories = list(Category.select())
-    users = list(User.select())
+    feeds = list(Feed.select().order_by(Feed.title))
+    uncategorized = list(Feed.select(lambda u: not u.categories).order_by(Feed.title))
+    categories = list(Category.select().order_by(Category.title))
+    users = list(User.select().order_by(User.username))
     username = users[0].username if users else ''
     return dict(nav_feeds=feeds, nav_uncategorized=uncategorized, nav_categories=categories, username=username)
 
