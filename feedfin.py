@@ -3,7 +3,7 @@ from datetime import datetime
 import feedparser
 from flask import Flask, render_template, request, redirect, url_for, flash
 from urllib.parse import urlparse, urljoin
-from bs4 import BeautifulSoup, Comment
+from bs4 import BeautifulSoup, Comment, Doctype
 from flask_bootstrap import Bootstrap
 from flask_moment import Moment
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required
@@ -101,13 +101,20 @@ def fetch_feed(id):
 def strip_summary(summary):
     soup = BeautifulSoup(summary, 'html.parser')
     text = soup.find_all(text=True)
-    stripped = ''.join(list(filter(visible, text)))
-    return stripped[:300] + '...' if stripped else ''
+    stripped = ' '.join(list(filter(visible, text)))
+    if len(stripped) > 300:
+        return stripped[:300] + '...'
+    elif stripped:
+        return stripped
+    else:
+        return ''
 
 def visible(element):
     if element.parent.name in ['style', 'script', 'head', 'title', 'meta']:
         return False
-    elif isinstance(element, Comment):
+    elif isinstance(element, (Comment, Doctype)):
+        return False
+    elif element.string == '\n':
         return False
     return True
 
