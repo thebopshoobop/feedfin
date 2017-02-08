@@ -79,28 +79,33 @@ def add_author(name):
 @orm.db_session
 def fetch_feed(id):
     feed = Feed[id]
+    print('Fetching Feed {}'.format(feed.title))
     p = feedparser.parse(feed.url, etag=feed.etag, modified=feed.modified)
     feed.etag = p.etag if 'etag' in p else ''
     feed.modified = p.modified if 'modified' in p else ''
-    for e in p.entries if 'entries' in p else []:
-        author = Author[add_author(e.author.title())] if 'author' in e and e.author else Author[add_author('None')]
-        title = e.title if 'title' in e else ''
-        url = e.link if 'link' in e else feed.url
-        published = datetime(*e.published_parsed[:6]) if 'published_parsed' in e else datetime.utcnow()
-        summary = strip_summary(e.summary) if 'summary' in e else ''
-        image = find_image(e)
+    return p.entries if 'entries' in p else []
 
-        a = Article.get(url=url)
-        if a:
-            if a.published != published:
-                a.feed = feed
-                a.author = author
-                a.title = title
-                a.published = published
-                a.summary = summary
-                a.image = image
-        else:
-            new_article = Article(feed=feed, author=author, title=title, url=url, published=published, summary=summary, image=image)
+@orm.db_session
+def parse_entry(entry, feed_id):
+    feed = Feed[feed_id]
+    author = Author[add_author(entry.author.title())] if 'author' in entry and entry.author else Author[add_author('None')]
+    title = entry.title if 'title' in entry else ''
+    url = entry.link if 'link' in entry else feed.url
+    published = datetime(*entry.published_parsed[:6]) if 'published_parsed' in entry else datetime.utcnow()
+    summary = strip_summary(entry.summary) if 'summary' in entry else ''
+    image = find_image(entry)
+    print('Parsing Entry {}'.format(title))
+    article = Article.get(url=url)
+    if article:
+        if article.published != published:
+            article.feed = feed
+            article.author = author
+            article.title = title
+            article.published = published
+            article.summary = summary
+            article.image = image
+    else:
+        new_article = Article(feed=feed, author=author, title=title, url=url, published=published, summary=summary, image=image)
 
 def strip_summary(summary):
     soup = BeautifulSoup(summary, 'html.parser')
@@ -361,19 +366,22 @@ def edit_entity():
 def fetch_entity():
     try:
         if not 'entity' in request.values:
-            for feed_id in orm.select(f.id for f in Feed):
-                fetch_feed(feed_id)
+            feed_ids = orm.select(f.id for f in Feed)
         elif request.values['entity'] == 'category' and 'id' not in request.values:
-            for feed in orm.select(f for f in Feed if not f.categories):
-                fetch_feed(feed.id)
+            feed_ids = orm.select(f.id for f in Feed if not f.categories)
         elif valid_entity() and request.values['entity'] == 'category':
-            for feed in Category[request.values['id']].feeds:
-                fetch_feed(feed.id)
+            feed_ids = [f.id for f in Category[request.values['id']].feeds]
         elif valid_entity() and request.values['entity'] == 'feed':
-            fetch_feed(request.values['id'])
+            feed_ids = [request.values['id']]
         else:
+            feed_ids = []
             flash('Warning: Failed Fetch')
-
+        entries = []
+        for feed in feed_ids:
+            feed_entries = fetch_feed(feed)
+            entries.extend([[entry, feed] for entry in feed_entries])
+        for entry, feed_id in entries:
+            parse_entry(entry, feed_id)
     except orm.ObjectNotFound:
         missing_entitiy()
 
