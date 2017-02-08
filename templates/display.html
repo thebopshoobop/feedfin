@@ -37,9 +37,18 @@
                 <small>{{ moment(article.published).format("dddd h:mma") }}</small>
                 <span class="pull-right text-lowercase text-capitalize">{% if article.author.name != "none" %}{{ article.author.name }}{% endif %}</span>
             </div>
-            <div class="panel-body">
-                <span class="text-muted">{{ article.title }}</span>
-                {% if article.summary %}{{ article.summary }}{% endif %}
+            <div class="panel-body row">
+                {% if article.image %}
+                <div class="col-xs-8 col-md-10">
+                {% endif %}
+                    <span class="text-muted">{{ article.title }}</span>
+                    {% if article.summary %}{{ article.summary }}{% endif %}
+                {% if article.image %}
+                </div>
+                <div class="col-xs-4 col-md-2">
+                    <img src="{{ article.image }}" class="img-thumbnail">
+                </div>
+                {% endif %}
             </div>
         </div>
     </a>
