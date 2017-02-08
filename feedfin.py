@@ -37,6 +37,7 @@ class Article(db.Entity):
     read = orm.Optional(bool, default=False)
     published = orm.Required(datetime)
     summary = orm.Optional(str)
+    image = orm.Optional(str)
 
 class Category(db.Entity):
     id = orm.PrimaryKey(int, auto=True)
@@ -87,6 +88,8 @@ def fetch_feed(id):
         url = e.link if 'link' in e else feed.url
         published = datetime(*e.published_parsed[:6]) if 'published_parsed' in e else datetime.utcnow()
         summary = strip_summary(e.summary) if 'summary' in e else ''
+        image = find_image(e)
+
         a = Article.get(url=url)
         if a:
             if a.published != published:
@@ -95,8 +98,9 @@ def fetch_feed(id):
                 a.title = title
                 a.published = published
                 a.summary = summary
+                a.image = image
         else:
-            new_article = Article(feed=feed, author=author, title=title, url=url, published=published, summary=summary)
+            new_article = Article(feed=feed, author=author, title=title, url=url, published=published, summary=summary, image=image)
 
 def strip_summary(summary):
     soup = BeautifulSoup(summary, 'html.parser')
@@ -117,6 +121,22 @@ def visible(element):
     elif element.string == '\n':
         return False
     return True
+
+def find_image(entry):
+    if 'media_content' in entry and 'url' in entry['media_content'][0]:
+        return entry['media_content'][0]['url']
+    else:
+        image = ''
+        if 'content' in entry and 'value' in entry['content'][0]:
+            image = parse_image(entry['content'][0]['value'])
+        if not image and 'summary' in entry:
+            image = parse_image(entry['summary'])
+        return image
+
+def parse_image(html):
+    soup = BeautifulSoup(html, 'html.parser')
+    image = soup.find('img')
+    return image.get('src') if image else ''
 
 @login_manager.user_loader
 @orm.db_session
