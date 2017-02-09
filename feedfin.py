@@ -32,7 +32,7 @@ class Feed(db.Entity):
 class Article(db.Entity):
     id = orm.PrimaryKey(int, auto=True)
     feed = orm.Required('Feed')
-    author = orm.Optional('Author')
+    author = orm.Optional(str)
     title = orm.Required(str)
     url = orm.Required(str, unique=True)
     read = orm.Optional(bool, default=False)
@@ -44,11 +44,6 @@ class Category(db.Entity):
     id = orm.PrimaryKey(int, auto=True)
     title = orm.Required(str, unique=True)
     feeds = orm.Set('Feed')
-
-class Author(db.Entity):
-    id = orm.PrimaryKey(int, auto=True)
-    name = orm.Required(str, unique=True)
-    articles = orm.Set('Article')
 
 class User(UserMixin, db.Entity):
     id = orm.PrimaryKey(int, auto=True)
@@ -67,16 +62,6 @@ def add_category(title):
         orm.commit()
         return new_category.id
 
-@orm.db_session
-def add_author(name):
-    exists=Author.get(name=name)
-    if exists:
-        return exists.id
-    else:
-        new_author = Author(name=name)
-        orm.commit()
-        return new_author.id
-
 def fetch_worker(feed_id):
     entries = fetch_feed(feed_id)
     for entry in entries:
@@ -93,7 +78,7 @@ def fetch_feed(id):
 @orm.db_session
 def parse_entry(entry, feed_id):
     feed = Feed[feed_id]
-    author = Author[add_author(entry.author.title())] if 'author' in entry and entry.author else Author[add_author('None')]
+    author = entry['author'] if 'author' in entry else ''
     title = entry.title if 'title' in entry else ''
     url = entry.link if 'link' in entry else feed.url
     published = datetime(*entry.published_parsed[:6]) if 'published_parsed' in entry else datetime.utcnow()
@@ -110,6 +95,7 @@ def parse_entry(entry, feed_id):
             article.image = image
     else:
         new_article = Article(feed=feed, author=author, title=title, url=url, published=published, summary=summary, image=image)
+    orm.commit()
 
 def strip_summary(summary):
     soup = BeautifulSoup(summary, 'html.parser')
