@@ -49,6 +49,7 @@ class User(UserMixin, db.Entity):
     id = orm.PrimaryKey(int, auto=True)
     username = orm.Required(str, unique=True)
     password_hash = orm.Required(str, unique=True)
+    page_length = orm.Required(int, default=50)
 
 db.generate_mapping(create_tables=True)
 
@@ -155,9 +156,8 @@ def nav_variables():
     feeds = list(Feed.select().order_by(Feed.title))
     uncategorized = list(Feed.select(lambda u: not u.categories).order_by(Feed.title))
     categories = list(Category.select().order_by(Category.title))
-    users = list(User.select().order_by(User.username))
-    username = users[0].username if users else ''
-    return dict(nav_feeds=feeds, nav_uncategorized=uncategorized, nav_categories=categories, username=username)
+    user = list(User.select().order_by(User.username))[0]
+    return dict(nav_feeds=feeds, nav_uncategorized=uncategorized, nav_categories=categories, user=user)
 
 @app.route('/register', methods=['GET', 'POST'])
 @orm.db_session
@@ -224,6 +224,9 @@ def edit_user():
     elif 'password' in request.values:
         user = list(User.select())[0]
         user.password_hash = generate_password_hash(request.values['password'])
+    elif 'page_length' in request.values:
+        user = list(User.select())[0]
+        user.page_length = int(request.values['page_length'])
     elif 'delete' in request.values:
         logout_user()
         for user in User.select():

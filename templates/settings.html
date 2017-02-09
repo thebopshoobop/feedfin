@@ -115,19 +115,16 @@
                                     <label for="username-input">Username</label>
                                 </div>
                                 <div class="input-group">
-                                    <input type="text" class="form-control" name="username" id="username-input" value="{{ username }}">
+                                    <input type="text" class="form-control" name="username" id="username-input" value="{{ user.username }}">
                                     <span class="input-group-btn">
                                         <input class="btn btn-default" type="submit" value="Change">
                                     </span>
                                 </div>
                             </form>
                         </li>
-                    </ul>
-                    <ul class="list-group">
                         <li class="list-group-item">
                             <form method="POST" action="{{ url_for('edit_user') }}">
                                 <div class="form-group">
-                                    <input type="hidden" name="property" value="password">
                                     <label for="password-input">Password</label>
                                 </div>
                                 <div class="input-group">
@@ -138,8 +135,19 @@
                                 </div>
                             </form>
                         </li>
-                    </ul>
-                    <ul class="list-group">
+                        <li class="list-group-item">
+                            <form method="POST" action="{{ url_for('edit_user') }}">
+                                <div class="form-group">
+                                    <label for="page_length-input">Page Length</label>
+                                </div>
+                                <div class="input-group">
+                                    <input type="text" class="form-control" name="page_length" id="page_length-input" value="{{ user.page_length }}">
+                                    <span class="input-group-btn">
+                                        <input class="btn btn-default" type="submit" value="Change">
+                                    </span>
+                                </div>
+                            </form>
+                        </li>
                         <li class="list-group-item">
                             <form method="POST" action="{{ url_for('edit_user') }}">
                                 <div class="form-group">
