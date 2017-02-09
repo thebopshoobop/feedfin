@@ -78,7 +78,7 @@ def fetch_feed(id):
 @orm.db_session
 def parse_entry(entry, feed_id):
     feed = Feed[feed_id]
-    author = entry['author'] if 'author' in entry else ''
+    author = entry['author'].title() if 'author' in entry else ''
     title = entry.title if 'title' in entry else ''
     url = entry.link if 'link' in entry else feed.url
     published = datetime(*entry.published_parsed[:6]) if 'published_parsed' in entry else datetime.utcnow()
