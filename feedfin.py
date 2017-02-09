@@ -8,6 +8,7 @@ from flask_bootstrap import Bootstrap
 from flask_moment import Moment
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required
 from werkzeug.security import generate_password_hash, check_password_hash
+import multiprocessing
 
 db = orm.Database()
 db.bind('sqlite', 'fbdb.sqlite', create_db=True)
@@ -76,10 +77,14 @@ def add_author(name):
         orm.commit()
         return new_author.id
 
+def fetch_worker(feed_id):
+    entries = fetch_feed(feed_id)
+    for entry in entries:
+        parse_entry(entry, feed_id)
+
 @orm.db_session
 def fetch_feed(id):
     feed = Feed[id]
-    print('Fetching Feed {}'.format(feed.title))
     p = feedparser.parse(feed.url, etag=feed.etag, modified=feed.modified)
     feed.etag = p.etag if 'etag' in p else ''
     feed.modified = p.modified if 'modified' in p else ''
@@ -94,7 +99,6 @@ def parse_entry(entry, feed_id):
     published = datetime(*entry.published_parsed[:6]) if 'published_parsed' in entry else datetime.utcnow()
     summary = strip_summary(entry.summary) if 'summary' in entry else ''
     image = find_image(entry)
-    print('Parsing Entry {}'.format(title))
     article = Article.get(url=url)
     if article:
         if article.published != published:
@@ -376,12 +380,13 @@ def fetch_entity():
         else:
             feed_ids = []
             flash('Warning: Failed Fetch')
-        entries = []
-        for feed in feed_ids:
-            feed_entries = fetch_feed(feed)
-            entries.extend([[entry, feed] for entry in feed_entries])
-        for entry, feed_id in entries:
-            parse_entry(entry, feed_id)
+        processes = []
+        for feed_id in feed_ids:
+            p = multiprocessing.Process(target=fetch_worker, args=(feed_id,))
+            processes.append(p)
+            p.start()
+        for p in processes:
+            p.join()
     except orm.ObjectNotFound:
         missing_entitiy()
 
