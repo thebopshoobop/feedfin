@@ -29,7 +29,7 @@
 {% endblock navbar_insert %}
 {% block content %}
 <div class="container-fluid article-list">
-    {% for article in articles %}
+{% for article in articles %}
     <a href="{{ article.url }}" target="_blank" class='article-panel'>
         <div class="panel panel-default">
             <div class="panel-heading clearfix">
@@ -37,22 +37,25 @@
                 <small>{{ moment(article.published).format("dddd h:mma") }}</small>
                 <span class="pull-right text-lowercase text-capitalize">{% if article.author %}{{ article.author }}{% endif %}</span>
             </div>
+        {% if article.image %}
             <div class="panel-body row">
-                {% if article.image %}
                 <div class="col-xs-8 col-md-10">
-                {% endif %}
                     <span class="text-muted">{{ article.title }}</span>
                     {% if article.summary %}{{ article.summary }}{% endif %}
-                {% if article.image %}
                 </div>
                 <div class="col-xs-4 col-md-2">
                     <img src="{{ article.image }}" class="img-thumbnail">
                 </div>
-                {% endif %}
             </div>
+        {% else %}
+            <div class="panel-body">
+                <span class="text-muted">{{ article.title }}</span>
+                {% if article.summary %}{{ article.summary }}{% endif %}
+            </div>
+        {% endif %}
         </div>
     </a>
-    {% endfor %}
+{% endfor %}
     <nav aria-label="Pager">
         <ul class="pager">
         {% if type == "feed" %}
