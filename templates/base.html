@@ -37,7 +37,7 @@
                             <li><a href="{{ url_for('display', entity='category') }}">View Uncategorized</a></li>
                             <li role="separator" class="divider"></li>
                             {% for feed in nav_uncategorized %}
-                            <li><a href="{{ url_for('display', entity='feed', id=feed.it) }}">{{ feed.title }}</a></li>
+                            <li><a href="{{ url_for('display', entity='feed', id=feed.id) }}">{{ feed.title }}</a></li>
                             {% endfor %}
                         </ul>
                     </li>

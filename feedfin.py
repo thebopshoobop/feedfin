@@ -156,7 +156,8 @@ def nav_variables():
     feeds = list(Feed.select().order_by(Feed.title))
     uncategorized = list(Feed.select(lambda u: not u.categories).order_by(Feed.title))
     categories = list(Category.select().order_by(Category.title))
-    user = list(User.select())[0]
+    users = list(User.select())
+    user = users[0] if users else ''
     return dict(nav_feeds=feeds, nav_uncategorized=uncategorized, nav_categories=categories, user=user)
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -252,9 +253,7 @@ def settings():
 def display():
     try:
         page_length = list(u.page_length for u in User.select())[0]
-        page_number = abs(int(request.values['page'])) if 'page' in request.values else 1
-        entity = request.values['entity'] if 'entity' in request.values and request.values['entity'] in ['feed', 'category'] else 'feed'
-        id = int(request.values['id']) if 'id' in request.values and int(request.values['id']) >= -1 else -1
+        entity, id, page_number = parse_entity()
         if entity == 'feed' and id == -1:
             articles = list(Article.select().order_by(orm.desc(Article.published)).page(page_number, pagesize=page_length))
             page_title = 'Everything'
@@ -368,14 +367,15 @@ def edit_entity():
 @login_required
 def fetch_entity():
     try:
-        if not 'entity' in request.values:
+        entity, id, page_number = parse_entity()
+        if entity == 'feed' and id == -1:
             feed_ids = orm.select(f.id for f in Feed)
-        elif request.values['entity'] == 'category' and 'id' not in request.values:
+        elif entity == 'feed' and id > -1:
+            feed_ids = [id]
+        elif entity == 'category' and id == -1:
             feed_ids = orm.select(f.id for f in Feed if not f.categories)
-        elif valid_entity() and request.values['entity'] == 'category':
+        elif entity == 'category' and id > -1:
             feed_ids = [f.id for f in Category[request.values['id']].feeds]
-        elif valid_entity() and request.values['entity'] == 'feed':
-            feed_ids = [request.values['id']]
         else:
             feed_ids = []
             flash('Warning: Failed Fetch')
@@ -426,3 +426,9 @@ def valid_entity():
         return int(request.values['id']) >= 0 and request.values['entity'] in ['feed', 'category']
     except (ValueError, KeyError):
         return False
+
+def parse_entity():
+    entity = request.values['entity'] if 'entity' in request.values and request.values['entity'] in ['feed', 'category'] else 'feed'
+    id = int(request.values['id']) if 'id' in request.values and int(request.values['id']) >= -1 else -1
+    page_number = abs(int(request.values['page'])) if 'page' in request.values else 1
+    return entity, id, page_number

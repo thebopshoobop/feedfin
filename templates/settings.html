@@ -20,7 +20,7 @@
                             </div>
                             <div class="btn-group pull-right" role="group" aria-label="Delete or Edit">
                                 <a type="button" class="btn btn-default" href="{{ url_for('del_entity', entity='feed', id=feed.id) }}">Delete</a>
-                                <a type="button" class="btn btn-default"  href="{{ url_for('edit_entity' entity='feed', id=feed.id) }}">Edit</a>
+                                <a type="button" class="btn btn-default"  href="{{ url_for('edit_entity', entity='feed', id=feed.id) }}">Edit</a>
                             </div>
                         </li>
                         {% endfor %}
