@@ -22,10 +22,10 @@
                     <li class="dropdown">
                         <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">{{ category.title }} <span class="caret"></span></a>
                         <ul class="dropdown-menu">
-                            <li><a href="{{ url_for('display') }}?entity=category&id={{ category.id }}">View {{ category.title }}</a></li>
+                            <li><a href="{{ url_for('display', entity='category', id=category.id) }}">View {{ category.title }}</a></li>
                             <li role="separator" class="divider"></li>
                             {% for feed in category.feeds %}
-                            <li><a href="{{ url_for('display') }}?entity=feed&id={{ feed.id }}">{{ feed.title }}</a></li>
+                            <li><a href="{{ url_for('display', entity='feed', id=feed.id) }}">{{ feed.title }}</a></li>
                             {% endfor %}
                         </ul>
                     </li>
@@ -34,10 +34,10 @@
                     <li class="dropdown">
                         <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Uncategorized <span class="caret"></span></a>
                         <ul class="dropdown-menu">
-                            <li><a href="{{ url_for('display') }}?entity=category">View Uncategorized</a></li>
+                            <li><a href="{{ url_for('display', entity='category') }}">View Uncategorized</a></li>
                             <li role="separator" class="divider"></li>
                             {% for feed in nav_uncategorized %}
-                            <li><a href="{{ url_for('display') }}?entity=feed&id={{ feed.id }}">{{ feed.title }}</a></li>
+                            <li><a href="{{ url_for('display', entity='feed', id=feed.it) }}">{{ feed.title }}</a></li>
                             {% endfor %}
                         </ul>
                     </li>

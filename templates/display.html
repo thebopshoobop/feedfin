@@ -1,34 +1,14 @@
 {% extends "base.html" %}
 {% block title %}
-    {% if type == "feed" %}
-        {{ feed.title }}
-    {% elif type == "all_feeds" %}
-        All Feeds
-    {% elif type == "category" %}
-        {{ category.title }}
-    {% elif type == "uncategorized" %}
-        Uncategorized
-    {% endif %}
+    {{ page_title }}
 {% endblock title %}
 {% block navbar_insert %}
-    {% if type == "feed" %}
-        <a class="navbar-brand" href="{{ url_for('display') }}?entity=feed&id={{ feed.lid }}">{{ feed.title }}</a>
-        <a class="navbar-right navbar-toggle" href="{{ url_for('edit_entity') }}?entity=feed&id={{ feed.id }}"><span class="sr-only">Edit Feed</span><span class="fa fa-pencil fa-lg"></span></a>
-        <a class="navbar-right navbar-toggle" href="{{ url_for('fetch_entity') }}?entity=feed&id={{ feed.id }}"><span class="sr-only">Fetch Feed</span><span class="fa fa-refresh fa-lg"></span></a>
-    {% elif type == "all_feeds"%}
-        <a class="navbar-brand" href="{{ url_for('display') }}">All Feeds</span></a>
-        <a class="navbar-right navbar-toggle" href="{{ url_for('fetch_entity') }}"> <span class="sr-only">Fetch Feeds</span><span class="fa fa-refresh fa-lg"></a>
-    {% elif type == "category" %}
-        <a class="navbar-brand" href="{{ url_for('display') }}?entity=category&id={{ category.id }}">{{ category.title }}</a>
-        <a class="navbar-right navbar-toggle" href="{{ url_for('edit_entity') }}?entity=category&id={{ category.id }}"><span class="sr-only">Edit Category</span><span class="fa fa-pencil fa-lg"></span></a>
-        <a class="navbar-right navbar-toggle" href="{{ url_for('fetch_entity') }}?entity=category&id={{ category.id }}"><span class="sr-only">Fetch Feeds</span><span class="fa fa-refresh fa-lg"></span></a>
-    {% elif type == "uncategorized" %}
-        <a class="navbar-brand" href="{{ url_for('display') }}?entity=category">Uncategorized</a>
-        <a class="navbar-right navbar-toggle" href="{{ url_for('fetch_entity') }}?entity=category"><span class="sr-only">Fetch Feeds</span><span class="fa fa-refresh fa-lg"></a>
-    {% endif %}
+    <a class="navbar-right navbar-toggle" href="{{ url_for('edit_entity', entity=entity, id=id) }}"><span class="sr-only">Edit</span><span class="fa fa-pencil fa-lg"></span></a>
+    <a class="navbar-right navbar-toggle" href="{{ url_for('fetch_entity', entity=entity, id=id) }}"><span class="sr-only">Fetch</span><span class="fa fa-refresh fa-lg"></span></a>
 {% endblock navbar_insert %}
 {% block content %}
 <div class="container-fluid article-list">
+    <h3 class="text-right">{{ page_title }}</h3>
 {% for article in articles %}
     <a href="{{ article.url }}" target="_blank" class='article-panel'>
         <div class="panel panel-default">
@@ -58,19 +38,8 @@
 {% endfor %}
     <nav aria-label="Pager">
         <ul class="pager">
-        {% if type == "feed" %}
-            <li class="previous"><a href="{{ url_for('display', entity='feed', id=feed.id, page=page+1) }}"><span aria-hidden="true">&larr;</span> Older</a></li>
-            <li class="next{% if page == 1 %} disabled{% endif %}"><a href="{{ url_for('display', entity='feed', id=feed.id, page=page-1) }}">Newer <span aria-hidden="true">&rarr;</span></a></li>
-        {% elif type == "all_feeds" %}
-            <li class="previous"><a href="{{ url_for('display', page=page+1) }}"><span aria-hidden="true">&larr;</span> Older</a></li>
-            <li class="next{% if page == 1 %} disabled{% endif %}"><a href="{{ url_for('display', page=page-1) }}">Newer <span aria-hidden="true">&rarr;</span></a></li>
-        {% elif type == "category" %}
-            <li class="previous"><a href="{{ url_for('display', entity='category', id=category.id, page=page+1) }}"><span aria-hidden="true">&larr;</span> Older</a></li>
-            <li class="next{% if page == 1 %} disabled{% endif %}"><a href="{{ url_for('display', entity='category', id=category.id, page=page-1) }}">Newer <span aria-hidden="true">&rarr;</span></a></li>
-        {% elif type == "uncategorized" %}
-            <li class="previous"><a href="{{ url_for('display', entity='category', page=page+1) }}"><span aria-hidden="true">&larr;</span> Older</a></li>
-            <li class="next{% if page == 1 %} disabled{% endif %}"><a href="{{ url_for('display', entity='category', page=page-1) }}">Newer <span aria-hidden="true">&rarr;</span></a></li>
-        {% endif %}
+            <li class="previous"><a href="{{ url_for('display', entity=entity, id=id, page=page+1) }}"><span aria-hidden="true">&larr;</span> Older</a></li>
+            <li class="next{% if page == 1 %} disabled{% endif %}"><a href="{{ url_for('display', entity=entity, id=id, page=page-1) }}">Newer <span aria-hidden="true">&rarr;</span></a></li>
         </ul>
     </nav>
 </div>

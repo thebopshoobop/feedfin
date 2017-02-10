@@ -2,15 +2,9 @@
 {% block title %}
 {% if feed %}Edit Feed{% elif category %}Edit Category{% endif %}
 {% endblock title %}
-{% block navbar_insert %}
-    {% if feed %}
-        <a class="entity-header navbar-brand" href="{{ url_for('edit_entity') }}?entity=feed&id={{ feed.id }}">Edit Feed</a>
-    {% elif category %}
-        <a class="entity-header navbar-brand" href="{{ url_for('edit_entity') }}?entity=category&id={{ category.id }}">Edit Category</a>
-    {% endif %}
-{% endblock navbar_insert %}
 {% block content %}
 <div class="container-fluid">
+    <h3 class="text-right">{% if feed %}Edit Feed{% elif category %}Edit Category{% endif %}</h3>
     <div class="panel panel-default edit-panel">
         <div class="panel-body">
             <form method="POST" action="{{ url_for('edit_entity') }}">
