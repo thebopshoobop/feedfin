@@ -16,6 +16,7 @@ $ source venv/bin/activate
 ```
 $ (venv) pip install -r requirements.txt
 ```
+**Note:** Be sure to provide a new secret key (long random string in /feedfin.py)!
 
 ### Running
 
@@ -29,4 +30,4 @@ Install the included example feedfin.service systemd unit file (after making any
 
 
 ### Notes
-When you run it for the first time feedfin will automatically create an empty database in its directory. When you load up the site in your browser it will redirect you to the register view, where you can punch in some credentials. After that, hit up the settings to add some feeds and categories. Now hit the refresh button from any display screen for some sweet, sweet feed goodness! At this time feedfin only has support for a single user, is horribly ineffecient at downloading and parsing new articles, and doesn't even implement paging. But hey, it fetches your feeds!
+When you run it for the first time feedfin will automatically create an empty database in its directory. When you load up the site in your browser it will redirect you to the register view, where you can punch in some credentials. After that, hit up the settings to add some feeds and categories. Now hit the refresh button from any display screen for some sweet, sweet feed goodness! At this time feedfin only has support for a single user, ~~is horribly ineffecient at~~ uses multiprocessing.Process for downloading and parsing new articles , and ~~doesn't even implement paging~~ has basic paging support. But hey, it fetches your feeds!
