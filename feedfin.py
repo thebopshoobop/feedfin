@@ -156,7 +156,7 @@ def nav_variables():
     feeds = list(Feed.select().order_by(Feed.title))
     uncategorized = list(Feed.select(lambda u: not u.categories).order_by(Feed.title))
     categories = list(Category.select().order_by(Category.title))
-    user = list(User.select().order_by(User.username))[0]
+    user = list(User.select())[0]
     return dict(nav_feeds=feeds, nav_uncategorized=uncategorized, nav_categories=categories, user=user)
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -251,22 +251,26 @@ def settings():
 @login_required
 def display():
     try:
+        page_length = list(u.page_length for u in User.select())[0]
+        page_number = abs(int(request.values['page'])) if 'page' in request.values else 1
         if not 'entity' in request.values:
-            articles = list(Article.select().order_by(orm.desc(Article.published)))
-            return render_template('display.html', type='all_feeds', articles=articles)
+            articles = list(Article.select().order_by(orm.desc(Article.published)).page(page_number, pagesize=page_length))
+            return render_template('display.html', type='all_feeds', articles=articles, page=page_number)
         elif request.values['entity'] == 'category' and 'id' not in request.values:
-            articles = list(orm.select(a for a in Article if not a.feed.categories).order_by(orm.desc(Article.published)))
-            return render_template('display.html', type='uncategorized', articles=articles)
+            articles = list(orm.select(a for a in Article if not a.feed.categories).order_by(orm.desc(Article.published)).page(page_number, pagesize=page_length))
+            return render_template('display.html', type='uncategorized', articles=articles, page=page_number)
         elif valid_entity() and request.values['entity'] == 'category':
             category = Category[request.values['id']]
-            articles = list(orm.select(a for a in Article if a.feed in category.feeds).order_by(orm.desc(Article.published)))
-            return render_template('display.html', type='category', category=category, articles=articles)
+            articles = list(orm.select(a for a in Article if a.feed in category.feeds).order_by(orm.desc(Article.published)).page(page_number, pagesize=page_length))
+            return render_template('display.html', type='category', category=category, articles=articles, page=page_number)
         elif valid_entity() and request.values['entity'] == 'feed':
             feed = Feed[request.values['id']]
-            articles = list(orm.select(a for a in Article if a.feed is feed).order_by(orm.desc(Article.published)))
-            return render_template('display.html', type='feed', feed=feed, articles=articles)
+            articles = list(orm.select(a for a in Article if a.feed is feed).order_by(orm.desc(Article.published)).page(page_number, pagesize=page_length))
+            return render_template('display.html', type='feed', feed=feed, articles=articles, page=page_number)
     except orm.ObjectNotFound:
         missing_entitiy()
+    except ValueError:
+        flash('Warning: Invalid Page')
 
     if not valid_entity():
         flash('Warning: Invalid Feed/Category')

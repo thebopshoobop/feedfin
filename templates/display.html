@@ -53,5 +53,22 @@
         </div>
     </a>
     {% endfor %}
+    <nav aria-label="Pager">
+        <ul class="pager">
+        {% if type == "feed" %}
+            <li class="previous"><a href="{{ url_for('display', entity='feed', id=feed.id, page=page+1) }}"><span aria-hidden="true">&larr;</span> Older</a></li>
+            <li class="next{% if page == 1 %} disabled{% endif %}"><a href="{{ url_for('display', entity='feed', id=feed.id, page=page-1) }}">Newer <span aria-hidden="true">&rarr;</span></a></li>
+        {% elif type == "all_feeds" %}
+            <li class="previous"><a href="{{ url_for('display', page=page+1) }}"><span aria-hidden="true">&larr;</span> Older</a></li>
+            <li class="next{% if page == 1 %} disabled{% endif %}"><a href="{{ url_for('display', page=page-1) }}">Newer <span aria-hidden="true">&rarr;</span></a></li>
+        {% elif type == "category" %}
+            <li class="previous"><a href="{{ url_for('display', entity='category', id=category.id, page=page+1) }}"><span aria-hidden="true">&larr;</span> Older</a></li>
+            <li class="next{% if page == 1 %} disabled{% endif %}"><a href="{{ url_for('display', entity='category', id=category.id, page=page-1) }}">Newer <span aria-hidden="true">&rarr;</span></a></li>
+        {% elif type == "uncategorized" %}
+            <li class="previous"><a href="{{ url_for('display', entity='category', page=page+1) }}"><span aria-hidden="true">&larr;</span> Older</a></li>
+            <li class="next{% if page == 1 %} disabled{% endif %}"><a href="{{ url_for('display', entity='category', page=page-1) }}">Newer <span aria-hidden="true">&rarr;</span></a></li>
+        {% endif %}
+        </ul>
+    </nav>
 </div>
 {% endblock content %}
