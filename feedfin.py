@@ -320,47 +320,48 @@ def del_entity():
 def edit_entity():
     if 'id' in request.values and int(request.values['id']) == -1:
         return redirect(url_for('settings'))
-
+    next = get_redirect_target()
     if not valid_entity():
         flash('Warning: Invalid Edit Parameter(s)')
-    try:
-        if request.method == 'GET':
-            if request.values['entity'] == 'feed':
-                feed=Feed[request.values['id']]
-                other_categories = list(orm.select(c for c in Category if c not in feed.categories))
-                return render_template('edit.html', feed=feed, other_categories=other_categories)
+    else:
+        try:
+            if request.method == 'GET':
+                if request.values['entity'] == 'feed':
+                    feed=Feed[request.values['id']]
+                    other_categories = list(orm.select(c for c in Category if c not in feed.categories))
+                    return render_template('edit.html', feed=feed, other_categories=other_categories, next=next)
 
-            elif request.values['entity'] == 'category':
-                category = Category[request.values['id']]
-                other_feeds = list(orm.select(f for f in Feed if f not in category.feeds))
-                return render_template('edit.html', category=category, other_feeds=other_feeds)
+                elif request.values['entity'] == 'category':
+                    category = Category[request.values['id']]
+                    other_feeds = list(orm.select(f for f in Feed if f not in category.feeds))
+                    return render_template('edit.html', category=category, other_feeds=other_feeds, next=next)
 
-        elif request.method =='POST':
-            if request.values['submit'] == 'delete':
-                return redirect(url_for('del_entity', entity=request.values['entity'], id=request.values['id']))
+            elif request.method =='POST':
+                if request.values['submit'] == 'delete':
+                    return redirect(url_for('del_entity', entity=request.values['entity'], id=request.values['id']))
 
-            elif request.values['submit'] == 'save' and request.values['entity'] == 'feed':
-                feed = Feed[request.values['id']]
-                feed.title = request.values['title']
-                feed.url = request.values['url']
-                feed.categories.clear()
-                [feed.categories.add(Category[c]) for c in list(request.values.getlist('category'))]
-                flash('Success!')
+                elif request.values['submit'] == 'save' and request.values['entity'] == 'feed':
+                    feed = Feed[request.values['id']]
+                    feed.title = request.values['title']
+                    feed.url = request.values['url']
+                    feed.categories.clear()
+                    [feed.categories.add(Category[c]) for c in list(request.values.getlist('category'))]
+                    flash('Success!')
 
-            elif request.values['submit'] == 'save' and request.values['entity'] == 'category':
-                category = Category[request.values['id']]
-                category.title = request.values['title']
-                category.feeds.clear()
-                [category.feeds.add(Feed[f]) for f in list(request.values.getlist('feed'))]
-                flash('Success')
+                elif request.values['submit'] == 'save' and request.values['entity'] == 'category':
+                    category = Category[request.values['id']]
+                    category.title = request.values['title']
+                    category.feeds.clear()
+                    [category.feeds.add(Feed[f]) for f in list(request.values.getlist('feed'))]
+                    flash('Success')
 
-            else:
-                flash('Warning: Improper Edit Submission')
+                else:
+                    flash('Warning: Improper Edit Submission')
 
-    except orm.ObjectNotFound:
-        missing_entitiy()
+        except orm.ObjectNotFound:
+            missing_entitiy()
 
-    return redirect(url_for('settings'))
+    return redirect(next)
 
 @app.route('/fetch')
 @orm.db_session

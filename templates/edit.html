@@ -8,6 +8,7 @@
     <div class="panel panel-default edit-panel">
         <div class="panel-body">
             <form method="POST" action="{{ url_for('edit_entity') }}">
+                <input type="hidden" name="next" value="{{ next }}">
                 {% if feed %}
                 <input type="hidden" name="entity" value="feed">
                 <input type="hidden" name="id" value="{{ feed.id }}">
