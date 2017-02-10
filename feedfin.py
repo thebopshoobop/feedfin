@@ -156,9 +156,7 @@ def nav_variables():
     feeds = list(Feed.select().order_by(Feed.title))
     uncategorized = list(Feed.select(lambda u: not u.categories).order_by(Feed.title))
     categories = list(Category.select().order_by(Category.title))
-    users = list(User.select())
-    user = users[0] if users else ''
-    return dict(nav_feeds=feeds, nav_uncategorized=uncategorized, nav_categories=categories, user=user)
+    return dict(nav_feeds=feeds, nav_uncategorized=uncategorized, nav_categories=categories)
 
 @app.route('/register', methods=['GET', 'POST'])
 @orm.db_session
@@ -245,7 +243,9 @@ def edit_user():
 @orm.db_session
 @login_required
 def settings():
-    return render_template('settings.html')
+    users = list(User.select())
+    user = users[0] if users else ''
+    return render_template('settings.html', user=user)
 
 @app.route('/')
 @orm.db_session

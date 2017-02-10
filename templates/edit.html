@@ -5,7 +5,7 @@
 {% block content %}
 <div class="container-fluid">
     <h3 class="text-right">{% if feed %}Edit Feed{% elif category %}Edit Category{% endif %}</h3>
-    <div class="panel panel-default edit-panel">
+    <div class="panel panel-default center-block edit-panel">
         <div class="panel-body">
             <form method="POST" action="{{ url_for('edit_entity') }}">
                 <input type="hidden" name="next" value="{{ next }}">
@@ -14,7 +14,7 @@
                 <input type="hidden" name="id" value="{{ feed.id }}">
                 <div class="form-group">
                     <label for="feed-name">Name</label>
-                    <input type="text" class="form-control" id="feed-name" name="title" value="{{ feed.title }}">
+                    <input type="text" class="form-control" id="feed-name" name="title" value="{{ feed.title }}" autofocus="autofocus">
                 </div>
                 <div class="form-group">
                     <label for="feed-url">Address</label>
@@ -40,7 +40,7 @@
                 <input type="hidden" name="id" value="{{ category.id }}">
                 <div class="form-group">
                     <label for="cateogry-name">Name</label>
-                    <input type="text" class="form-control" id="category-name" name=title value="{{ category.title }}">
+                    <input type="text" class="form-control" id="category-name" name=title value="{{ category.title }}" autofocus="autofocus">
                 </div>
                 <div class="form-group">
                     <label>Feeds</label><br>
@@ -59,9 +59,9 @@
                 </div>
             {% endif %}
                 <div class="btn-group" role="group" aria-label="Form Controls">
-                    <button class="btn btn-default" type="submit" name="submit" value="delete">Delete</button>
-                    <button class="btn btn-default"  type="reset" name="submit" value="reset">Reset</button>
                     <button class="btn btn-default"  type="submit" name="submit" value="save">Save</button>
+                    <button class="btn btn-default"  type="reset" name="submit" value="reset">Reset</button>
+                    <button class="btn btn-default" type="submit" name="submit" value="delete">Delete</button>
                 </div>
         </form>
     </div>
