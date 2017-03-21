@@ -16,7 +16,7 @@ flask==0.12
 gunicorn==19.6.0
 itsdangerous==0.24        # via flask
 jinja2==2.9.4             # via flask
-markupsafe==0.23          # via jinja2
+markupsafe==1.0          # via jinja2
 pip-tools==1.8.0
 pony==0.7.1
 six==1.10.0               # via pip-tools
