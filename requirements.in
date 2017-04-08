@@ -7,3 +7,4 @@ flask-bootstrap
 flask-moment
 flask-login
 gunicorn
+listparser
