@@ -4,32 +4,20 @@
 #
 #    pip-compile --output-file requirements.txt requirements.in
 #
-astroid==1.4.9            # via pylint
 beautifulsoup4==4.5.3
-click==6.7                # via flask, pip-tools
+click==6.7                # via flask
 dominate==2.3.1           # via flask-bootstrap
 feedparser==5.2.1
-first==2.0.1              # via pip-tools
-flake8==3.3.0
 flask-bootstrap==3.3.7.1
 flask-login==0.4.0
 flask-moment==0.5.1
 flask==0.12.1
 gunicorn==19.7.1
-isort==4.2.5              # via pylint
 itsdangerous==0.24        # via flask
 jinja2==2.9.6             # via flask
-lazy-object-proxy==1.2.2  # via astroid
 listparser==0.18
 lxml==3.7.3
 markupsafe==1.0           # via jinja2
-mccabe==0.6.1             # via flake8, pylint
-pip-tools==1.8.2
 pony==0.7.1
-pycodestyle==2.3.1        # via flake8
-pyflakes==1.5.0           # via flake8
-pylint==1.6.5
-six==1.10.0               # via astroid, pip-tools, pylint
 visitor==0.1.3            # via flask-bootstrap
 werkzeug==0.12.1          # via flask
-wrapt==1.10.10            # via astroid
