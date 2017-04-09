@@ -1,4 +1,8 @@
+# Development
 pip-tools
+pylint
+flake8
+# Runtime
 pony
 feedparser
 flask
@@ -8,3 +12,4 @@ flask-moment
 flask-login
 gunicorn
 listparser
+lxml
