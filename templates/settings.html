@@ -105,6 +105,61 @@
         <div class="col-md-6 col-lg-4">
             <div class="panel panel-default">
                 <div class="panel-heading">
+                    <strong class="text-info">Bulk Actions</strong>
+                </div>
+                <ul class="list-group">
+                    <li class="list-group-item clearfix">
+                        <div class="pull-left">
+                            <h6 class="text-muted">Import Feed List</h6>
+                        </div>
+                        <form method="POST" action="{{ url_for('opml') }}" enctype="multipart/form-data" class="pull-right">
+                            <input type="hidden" name="action" value="import">
+                            <div class="btn-group">
+                                <label class="btn btn-default btn-file">
+                                    Browse<input type="file" name="file">
+                                </label>
+                                <input type="submit" value="Upload" class="btn btn-default">
+                            </div>
+                        </form>
+                    </li>
+                    <li class="list-group-item clearfix">
+                        <div class="pull-left">
+                            <h6 class="text-muted">Export Feed List</h6>
+                        </div>
+                        <form method="POST" action="{{ url_for('opml') }}" enctype="multipart/form-data" class="pull-right">
+                            <input type="hidden" name="action" value="export">
+                            <input type="submit" value="Download" class="btn btn-default pull-right">
+                        </form>
+                    </li>
+                    <li class="list-group-item clearfix">
+                        <div class="pull-left">
+                            <h6 class="text-muted">Delete All</h6>
+                        </div>
+                        <div class="btn-group pull-right" role="group">
+                            <a type="button" class="btn btn-default" href="{{ url_for('del_all', entity='feed') }}">Feeds</a>
+                            <a type="button" class="btn btn-default" href="{{ url_for('del_all', entity='category') }}">Categories</a>
+                            <a type="button" class="btn btn-default" href="{{ url_for('del_all') }}">Both</a>
+                        </div>
+                    </li>
+                    <li class="list-group-item">
+                        <div class="col-xs-8">
+                            <h6 class="text-muted">Remove Articles Older Than</h6>
+                        </div>
+                        <form method="POST" action=" {{ url_for('del_all') }}">
+                            <div class="col-xs-4 input-group">
+                                <input type="number" class="form-control" name="prune" placeholder="days">
+                                <span class="input-group-btn">
+                                    <input class="btn btn-default" type="submit" value="Delete">
+                                </span>
+                            </div>
+                        </form>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        <div class="col-md-6 col-lg-4">
+            <div class="panel panel-default">
+                <div class="panel-heading">
                     <strong class="text-info">User</strong>
                 </div>
                     <ul class="list-group">
@@ -149,11 +204,12 @@
                         </li>
                         <li class="list-group-item">
                             <form method="POST" action="{{ url_for('edit_user') }}">
-                                <div class="form-group">
+                                <div class="form-group clearfix">
                                     <input type="hidden" name="delete" value="delete">
-                                    <label for="category-input">Delete User</label>
-                                    <p>This will delete all user information including subscribed feeds and categories. You will be logged out.</p>
-                                    <input class="btn btn-default" type="submit" value="Delete">
+                                    <div class="pull-left">
+                                        <h6 class="text-muted">Delete all user information. You will be logged out.</h6>
+                                    </div>
+                                    <input class="btn btn-default pull-right" type="submit" value="Delete">
                                 </div>
                             </form>
                         </li>

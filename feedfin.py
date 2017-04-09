@@ -1,7 +1,7 @@
 from pony import orm
-from datetime import datetime
+from datetime import datetime, timedelta
 import feedparser
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import Flask, render_template, request, redirect, url_for, flash, make_response
 from urllib.parse import urlparse, urljoin
 from bs4 import BeautifulSoup, Comment, Doctype
 from flask_bootstrap import Bootstrap
@@ -9,6 +9,9 @@ from flask_moment import Moment
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required
 from werkzeug.security import generate_password_hash, check_password_hash
 import multiprocessing
+import listparser
+from email.utils import format_datetime
+from lxml import etree
 
 db = orm.Database()
 db.bind('sqlite', 'fbdb.sqlite', create_db=True)
@@ -279,6 +282,65 @@ def display():
 
     return redirect(get_redirect_target())
 
+
+@app.route('/opml', methods=['POST'])
+@orm.db_session
+@login_required
+def opml():
+    if 'action' in request.values and request.values['action'] in ['import', 'export']:
+        if request.values['action'] == 'import':
+            import_file = request.files.get('file')
+            if not import_file or import_file.filename == '':
+                flash('Warning: No File Selected')
+            else:
+                feed_list = listparser.parse(import_file)
+                for feed in feed_list['feeds']:
+                    url = feed['url']
+                    if not Feed.get(url=url):
+                        if 'title' in feed and feed['title']:
+                            title = feed['title']
+                        else:
+                            p = feedparser.parse(url)
+                            title = p.feed.title if 'title' in p.feed else url
+                        new_feed = Feed(title=title, url=url)
+                        for category_list in feed['categories']:
+                            for title in category_list:
+                                if title:
+                                    category = Category.get(title=title)
+                                    if not category:
+                                        category = Category(title=title)
+                                    new_feed.categories.add(category)
+                flash('Feeds Imported!')
+        elif request.values['action'] == 'export':
+            opml = etree.Element('opml', version='2.0')
+            head = etree.SubElement(opml, 'head')
+            head_elements = {
+                'title': 'feedfin OPML export',
+                'dateCreated': format_datetime(datetime.utcnow()),
+                'docs': 'http://dev.opml.org/spec2.html'
+            }
+            for element, text in head_elements.items():
+                new_element = etree.SubElement(head, element)
+                new_element.text = text
+            body = etree.SubElement(opml, 'body')
+            for feed in Feed.select():
+                new_element = etree.SubElement(body, 'outline',
+                    type='rss',
+                    text=feed.title,
+                    xmlUrl=feed.url,
+                    category=','.join([category.title for category in feed.categories])
+                )
+            opml_bytes = etree.tostring(opml, encoding='UTF-8', xml_declaration=True)
+            response = make_response(opml_bytes.decode('utf-8'))
+            response.headers['Content-Disposition'] = 'attachment; filename=feedfin.opml'
+            return response
+
+    else:
+        flash('Warning: Invalid Request')
+
+    return redirect(get_redirect_target())
+
+
 @app.route('/add', methods=['POST'])
 @orm.db_session
 @login_required
@@ -313,6 +375,45 @@ def del_entity():
             missing_entitiy()
 
     return redirect(url_for('settings'))
+
+
+@app.route('/del_all', methods=['POST', 'GET'])
+@orm.db_session
+@login_required
+def del_all():
+    if request.method == 'GET':
+        del_feed = 'entity' not in request.values or (
+            'entity' in request.values and request.values['entity'] == 'feed')
+        del_category = 'entity' not in request.values or (
+            'entity' in request.values and request.values['entity'] == 'category')
+
+        if del_feed:
+            for feed in Feed.select():
+                feed.delete()
+            flash('Deleted All Feeds')
+        if del_category:
+            for category in Category.select():
+                category.delete()
+            flash('Deleted All Categories')
+    elif request.method == 'POST':
+        if 'prune' in request.values:
+            try:
+                prune = int(request.values['prune'])
+                if prune >= 0:
+                    cutoff = datetime.utcnow() - timedelta(days=prune)
+                    articles = orm.select(a for a in Article if a.published < cutoff)
+                    for article in articles:
+                        article.delete()
+                    flash('Deleted All Articles Older Than {} Days'.format(prune))
+                else:
+                    flash('Warning: You Must Specify 0 or More Days to Keep')
+            except ValueError:
+                flash('Warning: Invalid Number of Days')
+        else:
+            flash('Warning: You Must Specify the Number of Days to Keep')
+
+    return redirect(get_redirect_target())
+
 
 @app.route('/edit', methods=['POST', 'GET'])
 @orm.db_session

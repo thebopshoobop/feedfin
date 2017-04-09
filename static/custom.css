@@ -73,3 +73,30 @@ a.panel-body {
 .article-panel .panel:hover {
     box-shadow: 1px 3px #36393E;
 }
+
+/* hide the default interface from file inputs */
+.btn-file {
+    position: relative;
+    overflow: hidden;
+}
+.btn-file input[type=file] {
+    position: absolute;
+    top: 0;
+    right: 0;
+    min-width: 100%;
+    min-height: 100%;
+    font-size: 100px;
+    text-align: right;
+    filter: alpha(opacity=0);
+    opacity: 0;
+    outline: none;
+    background: white;
+    cursor: inherit;
+    display: block;
+}
+
+/* fix spacing for columns inside list-groups */
+.list-group-item .col-xs-8,
+.list-group-item .col-xs-4 {
+    padding: 0;
+}
