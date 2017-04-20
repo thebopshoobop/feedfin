@@ -102,7 +102,7 @@ def parse_entry(entry, feed_id):
     orm.commit()
 
 def strip_summary(summary):
-    soup = BeautifulSoup(summary, 'html.parser')
+    soup = BeautifulSoup(summary, 'lxml')
     text = soup.find_all(text=True)
     stripped = ' '.join(list(filter(visible, text)))
     if len(stripped) > 300:
@@ -119,7 +119,18 @@ def visible(element):
         return False
     elif element.string == '\n':
         return False
+    elif 'href' in element.parent.attrs and bad_url(element.parent['href']):
+        return False
     return True
+
+
+def bad_url(url):
+    sites = ['projectwonderful.com']
+    for site in sites:
+        if site in url:
+            return True
+    return False
+
 
 def find_image(entry):
     if 'media_content' in entry and 'url' in entry['media_content'][0]:
@@ -132,10 +143,26 @@ def find_image(entry):
             image = parse_image(entry['summary'])
         return image
 
+
 def parse_image(html):
-    soup = BeautifulSoup(html, 'html.parser')
-    image = soup.find('img')
-    return image.get('src') if image else ''
+    soup = BeautifulSoup(html, 'lxml')
+    images = soup.find_all('img')
+    for image in images:
+        if ((
+                image.find_parent('div')
+                and 'class' in image.find_parent('div').attrs
+                and 'feedflare' in image.find_parent('div')['class']
+        ) or (
+            'src' in image.attrs
+            and bad_url(image['src'])
+        )):
+            continue
+        elif 'src' in image.attrs:
+            return image['src']
+
+    return ''
+
+
 
 @login_manager.user_loader
 @orm.db_session
@@ -144,7 +171,7 @@ def load_user(user_id):
 
 @orm.db_session
 def add_user(username, password):
-    exists=User.get()
+    exists = User.get()
     if exists:
         return False
     else:
