@@ -16,6 +16,8 @@ import requests
 import uuid
 import os
 import certifi
+from PIL import Image
+from io import BytesIO
 
 db = orm.Database()
 db.bind('sqlite', 'fbdb.sqlite', create_db=True)
@@ -158,8 +160,9 @@ def find_image(entry):
                 file_id = str(uuid.uuid4())
                 file_ext = urlparse(image).path.rsplit('.', 1)[1]
                 file_name = 'img/' + file_id + '.' + file_ext
-                with open(os.path.abspath('static/' + file_name), 'wb') as f:
-                    f.write(r.content)
+                image = Image.open(BytesIO(r.content))
+                image.thumbnail((300, 300))
+                image.save(os.path.abspath('static/' + file_name))
                 return file_name
 
     return ''
