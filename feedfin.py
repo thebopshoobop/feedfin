@@ -531,7 +531,7 @@ def fetch_entity():
             feeds = []
             flash('Warning: Failed Fetch')
 
-        with ProcessPoolExecutor() as executor:
+        with ProcessPoolExecutor(max_workers=os.cpu_count()*2) as executor:
             fetched = []
             for feed in feeds:
                 fetched.append(executor.submit(fetch_feed, feed.url, feed.id))
