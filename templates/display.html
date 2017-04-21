@@ -24,7 +24,7 @@
                     {% if article.summary %}{{ article.summary }}{% endif %}
                 </div>
                 <div class="col-xs-4 col-md-2">
-                    <img src="{{ article.image }}" class="img-thumbnail">
+                    <img src="{{ url_for('static', filename=article.image) }}" class="img-thumbnail">
                 </div>
             </div>
         {% else %}

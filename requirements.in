@@ -8,3 +8,5 @@ flask-login
 gunicorn
 listparser
 lxml
+requests
+certifi

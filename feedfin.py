@@ -8,10 +8,14 @@ from flask_bootstrap import Bootstrap
 from flask_moment import Moment
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required
 from werkzeug.security import generate_password_hash, check_password_hash
-import multiprocessing
+from concurrent.futures import ProcessPoolExecutor, as_completed
 import listparser
 from email.utils import format_datetime
 from lxml import etree
+import requests
+import uuid
+import os
+import certifi
 
 db = orm.Database()
 db.bind('sqlite', 'fbdb.sqlite', create_db=True)
@@ -22,6 +26,7 @@ moment = Moment(app)
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
+cert_location = certifi.where()
 
 class Feed(db.Entity):
     id = orm.PrimaryKey(int, auto=True)
@@ -42,6 +47,11 @@ class Article(db.Entity):
     published = orm.Required(datetime)
     summary = orm.Optional(str)
     image = orm.Optional(str)
+
+    def before_delete(self):
+        if self.image:
+            os.remove(os.path.abspath('static/' + self.image))
+
 
 class Category(db.Entity):
     id = orm.PrimaryKey(int, auto=True)
@@ -66,40 +76,32 @@ def add_category(title):
         orm.commit()
         return new_category.id
 
-def fetch_worker(feed_id):
-    entries = fetch_feed(feed_id)
-    for entry in entries:
-        parse_entry(entry, feed_id)
+def fetch_feed(url, feed_id, etag='', modified=''):
+    parsed = feedparser.parse(url, etag=etag, modified=modified)
+    return {
+        'id': feed_id,
+        'etag': parsed.etag if 'etag' in parsed else '',
+        'modified': parsed.modified if 'modified' in parsed else '',
+        'entries': parsed.entries if 'entries' in parsed else []
+    }
 
-@orm.db_session
-def fetch_feed(id):
-    feed = Feed[id]
-    p = feedparser.parse(feed.url, etag=feed.etag, modified=feed.modified)
-    feed.etag = p.etag if 'etag' in p else ''
-    feed.modified = p.modified if 'modified' in p else ''
-    return p.entries if 'entries' in p else []
 
-@orm.db_session
-def parse_entry(entry, feed_id):
-    feed = Feed[feed_id]
+def parse_entry(entry, feed_id, url, published):
     author = entry['author'].title() if 'author' in entry else ''
     title = entry.title if 'title' in entry else ''
-    url = entry.link if 'link' in entry else feed.url
-    published = datetime(*entry.published_parsed[:6]) if 'published_parsed' in entry else datetime.utcnow()
     summary = strip_summary(entry.summary) if 'summary' in entry else ''
     image = find_image(entry)
-    article = Article.get(url=url)
-    if article:
-        if article.published != published:
-            article.feed = feed
-            article.author = author
-            article.title = title
-            article.published = published
-            article.summary = summary
-            article.image = image
-    else:
-        new_article = Article(feed=feed, author=author, title=title, url=url, published=published, summary=summary, image=image)
-    orm.commit()
+
+    return {
+        'id': feed_id,
+        'author': author,
+        'title': title,
+        'url': url,
+        'published': published,
+        'summary': summary,
+        'image': image
+    }
+
 
 def strip_summary(summary):
     soup = BeautifulSoup(summary, 'lxml')
@@ -111,6 +113,7 @@ def strip_summary(summary):
         return stripped
     else:
         return ''
+
 
 def visible(element):
     if element.parent.name in ['style', 'script', 'head', 'title', 'meta']:
@@ -133,15 +136,33 @@ def bad_url(url):
 
 
 def find_image(entry):
+    image = ''
     if 'media_content' in entry and 'url' in entry['media_content'][0]:
-        return entry['media_content'][0]['url']
+        image = entry['media_content'][0]['url']
     else:
-        image = ''
         if 'content' in entry and 'value' in entry['content'][0]:
             image = parse_image(entry['content'][0]['value'])
         if not image and 'summary' in entry:
             image = parse_image(entry['summary'])
-        return image
+
+    if image:
+        parts = urlparse(image)
+        if allowed_file_name(parts.path):
+            if not parts.netloc:
+                parent = urlparse(entry['link'])
+                parent_url = parent.scheme + '://' + parent.netloc
+                image = urljoin(parent_url, parts.path)
+
+            r = requests.get(image, verify=cert_location)
+            if allowed_file_type(r.headers.get('content-type')):
+                file_id = str(uuid.uuid4())
+                file_ext = urlparse(image).path.rsplit('.', 1)[1]
+                file_name = 'img/' + file_id + '.' + file_ext
+                with open(os.path.abspath('static/' + file_name), 'wb') as f:
+                    f.write(r.content)
+                return file_name
+
+    return ''
 
 
 def parse_image(html):
@@ -491,6 +512,7 @@ def edit_entity():
 
     return redirect(next)
 
+
 @app.route('/fetch')
 @orm.db_session
 @login_required
@@ -498,23 +520,71 @@ def fetch_entity():
     try:
         entity, id, page_number = parse_entity()
         if entity == 'feed' and id == -1:
-            feed_ids = orm.select(f.id for f in Feed)
+            feeds = list(Feed.select())
         elif entity == 'feed' and id > -1:
-            feed_ids = [id]
+            feeds = [Feed[id]]
         elif entity == 'category' and id == -1:
-            feed_ids = orm.select(f.id for f in Feed if not f.categories)
+            feeds = list(orm.select(f for f in Feed if not f.categories))
         elif entity == 'category' and id > -1:
-            feed_ids = [f.id for f in Category[request.values['id']].feeds]
+            feeds = list(Category[id].feeds)
         else:
-            feed_ids = []
+            feeds = []
             flash('Warning: Failed Fetch')
-        processes = []
-        for feed_id in feed_ids:
-            p = multiprocessing.Process(target=fetch_worker, args=(feed_id,))
-            processes.append(p)
-            p.start()
-        for p in processes:
-            p.join()
+
+        with ProcessPoolExecutor() as executor:
+            fetched = []
+            for feed in feeds:
+                fetched.append(executor.submit(fetch_feed, feed.url, feed.id))
+
+            parsed = []
+            for fetch in as_completed(fetched):
+                results = fetch.result()
+                feed = Feed[results['id']]
+                if ((results['modified']
+                     and feed.modified == results['modified'])
+                        or (results['etag']
+                            and feed.etag == results['etag'])):
+                    continue
+                else:
+                    feed.modified = results['modified']
+                    feed.etag = results['etag']
+                    for entry in results['entries']:
+                        if 'link' not in entry:
+                            continue
+                        url = entry['link']
+
+                        if 'published_parsed' in entry:
+                            published = datetime(*entry.published_parsed[:6])
+                        else:
+                            published = datetime.utcnow()
+
+                        article = Article.get(url=url)
+                        if article and article.published == published:
+                            continue
+                        else:
+                            if article:
+                                article.delete()
+                            parsed.append(
+                                executor.submit(
+                                    parse_entry, entry, results['id'], url,
+                                    published
+                                )
+                            )
+
+            for entry in as_completed(parsed):
+                art = entry.result()
+                new_article = Article(
+                    feed=Feed[art['id']],
+                    author=art['author'],
+                    title=art['title'],
+                    url=art['url'],
+                    published=art['published'],
+                    summary=art['summary'],
+                    image=art['image']
+                )
+                orm.commit()
+
+
     except orm.ObjectNotFound:
         missing_entitiy()
 
@@ -561,3 +631,15 @@ def parse_entity():
     id = int(request.values['id']) if 'id' in request.values and int(request.values['id']) >= -1 else -1
     page_number = abs(int(request.values['page'])) if 'page' in request.values else 1
     return entity, id, page_number
+
+
+def allowed_file_name(filename):
+    allowed_extensions = ['png', 'jpg', 'jpeg', 'gif']
+
+    return '.' in filename and filename.rsplit('.', 1)[1] in allowed_extensions
+
+
+def allowed_file_type(filetype):
+    allowed_mimetypes = ['image/png', 'image/jpeg', 'image/gif']
+
+    return filetype and filetype in allowed_mimetypes
