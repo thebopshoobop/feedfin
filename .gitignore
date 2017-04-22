@@ -11,7 +11,7 @@ __pycache__/
 *.sqlite
 
 # Article Images
-static/img
+static/img/*
 
 # VS Code Prefs
 .vscode/
