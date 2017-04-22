@@ -143,9 +143,17 @@ def visible(element):
 
 
 def bad_url(url):
-    sites = ['projectwonderful.com']
+    sites = ['projectwonderful.com', 'feeds.feedburner.com']
     for site in sites:
         if site in url:
+            return True
+    return False
+
+
+def bad_class(candidates):
+    classes = ['feedflare', 'share_submission']
+    for candidate in candidates:
+        if candidate in classes:
             return True
     return False
 
@@ -154,6 +162,8 @@ def find_image(entry):
     image = ''
     if 'media_content' in entry and 'url' in entry['media_content'][0]:
         image = entry['media_content'][0]['url']
+    elif 'media_thumbnail' in entry and 'url' in entry['media_thumbnail'][0]:
+        image = entry['media_thumbnail'][0]['url']
     else:
         if 'content' in entry and 'value' in entry['content'][0]:
             image = parse_image(entry['content'][0]['value'])
@@ -188,7 +198,7 @@ def parse_image(html):
         if ((
                 image.find_parent('div')
                 and 'class' in image.find_parent('div').attrs
-                and 'feedflare' in image.find_parent('div')['class']
+                and bad_class(image.find_parent('div')['class'])
         ) or (
             'src' in image.attrs
             and bad_url(image['src'])
@@ -760,6 +770,6 @@ def allowed_file_name(filename):
 
 
 def allowed_file_type(filetype):
-    allowed_mimetypes = ['image/png', 'image/jpeg', 'image/gif']
+    allowed_mimetypes = ['image/png', 'image/jpg', 'image/jpeg', 'image/gif']
 
     return filetype and filetype in allowed_mimetypes
