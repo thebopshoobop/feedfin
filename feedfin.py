@@ -1,34 +1,42 @@
-from pony import orm
-from datetime import datetime, timedelta
-import feedparser
-from flask import Flask, render_template, request, redirect, url_for, flash, make_response
-from urllib.parse import urlparse, urljoin
-from bs4 import BeautifulSoup, Comment, Doctype
-from flask_bootstrap import Bootstrap
-from flask_moment import Moment
-from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required
-from werkzeug.security import generate_password_hash, check_password_hash
-from concurrent.futures import ProcessPoolExecutor, as_completed
-import listparser
-from email.utils import format_datetime
-from lxml import etree
-import requests
+"""feedfin: A simple feed agregator."""
+
 import uuid
 import os
+from datetime import datetime, timedelta
+from io import BytesIO
+from concurrent.futures import ProcessPoolExecutor, as_completed
+from email.utils import format_datetime
+from urllib.parse import urlparse, urljoin
+
+from pony import orm
+from flask import (Flask, render_template, request, redirect, url_for, flash,
+                   make_response)
+from flask_bootstrap import Bootstrap
+from flask_moment import Moment
+from flask_login import (LoginManager, UserMixin, login_user, logout_user,
+                         login_required)
+from werkzeug.security import generate_password_hash, check_password_hash
+import feedparser
+import listparser
+import requests
+from lxml import etree
+from bs4 import BeautifulSoup, Comment, Doctype
 import certifi
 from PIL import Image
-from io import BytesIO
+
 
 db = orm.Database()
 db.bind('sqlite', 'fbdb.sqlite', create_db=True)
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'TcAnhkN0z4F2loeqVA8IHw6Hw5iU10n1bgxcigeZdk27sMRm8oGlrw5EUENgd8vo'
+app.config['SECRET_KEY'] = ('TcAnhkN0z4F2loeqVA8IHw6Hw5iU10n1bgxcigeZdk27sMR'
+                            'm8oGlrw5EUENgd8vo')
 bootstrap = Bootstrap(app)
 moment = Moment(app)
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
 cert_location = certifi.where()
+
 
 class Feed(db.Entity):
     id = orm.PrimaryKey(int, auto=True)
@@ -38,6 +46,7 @@ class Feed(db.Entity):
     url = orm.Required(str, unique=True)
     etag = orm.Optional(str)
     modified = orm.Optional(str)
+
 
 class Article(db.Entity):
     id = orm.PrimaryKey(int, auto=True)
@@ -60,13 +69,16 @@ class Category(db.Entity):
     title = orm.Required(str, unique=True)
     feeds = orm.Set('Feed')
 
+
 class User(UserMixin, db.Entity):
     id = orm.PrimaryKey(int, auto=True)
     username = orm.Required(str, unique=True)
     password_hash = orm.Required(str, unique=True)
     page_length = orm.Required(int, default=50)
 
+
 db.generate_mapping(create_tables=True)
+
 
 @orm.db_session
 def add_category(title):
@@ -77,6 +89,7 @@ def add_category(title):
         new_category = Category(title=title)
         orm.commit()
         return new_category.id
+
 
 def fetch_feed(url, feed_id, etag='', modified=''):
     parsed = feedparser.parse(url, etag=etag, modified=modified)
@@ -155,12 +168,12 @@ def find_image(entry):
                 parent_url = parent.scheme + '://' + parent.netloc
                 image = urljoin(parent_url, parts.path)
 
-            r = requests.get(image, verify=cert_location)
-            if allowed_file_type(r.headers.get('content-type')):
+            download = requests.get(image, verify=cert_location)
+            if allowed_file_type(download.headers.get('content-type')):
                 file_id = str(uuid.uuid4())
                 file_ext = urlparse(image).path.rsplit('.', 1)[1]
                 file_name = 'img/' + file_id + '.' + file_ext
-                image = Image.open(BytesIO(r.content))
+                image = Image.open(BytesIO(download.content))
                 image.thumbnail((300, 300))
                 image.save(os.path.abspath('static/' + file_name))
                 return file_name
@@ -187,11 +200,11 @@ def parse_image(html):
     return ''
 
 
-
 @login_manager.user_loader
 @orm.db_session
 def load_user(user_id):
     return User.get(id=user_id)
+
 
 @orm.db_session
 def add_user(username, password):
@@ -204,28 +217,41 @@ def add_user(username, password):
         orm.commit()
         return new_user
 
+
 @app.context_processor
 @orm.db_session
 def nav_variables():
     feeds = list(Feed.select().order_by(Feed.title))
-    uncategorized = list(Feed.select(lambda u: not u.categories).order_by(Feed.title))
+    uncategorized = list(
+        Feed.select(lambda u: not u.categories).order_by(Feed.title)
+    )
     categories = list(Category.select().order_by(Category.title))
-    return dict(nav_feeds=feeds, nav_uncategorized=uncategorized, nav_categories=categories)
+    return dict(
+        nav_feeds=feeds,
+        nav_uncategorized=uncategorized,
+        nav_categories=categories
+    )
+
 
 @app.route('/register', methods=['GET', 'POST'])
 @orm.db_session
 def register():
     next = get_redirect_target()
-    if len(list(User.select())) > 0:
+    if list(User.select()):
         return redirect(next)
     else:
         if request.method == 'POST':
-            if not request.values['username'] or not request.values['password']:
+            if (not request.values['username']
+                    or not request.values['password']):
                 flash('Username and Password are both required')
             else:
-                new_user = add_user(request.values['username'], request.values['password'])
+                new_user = add_user(
+                    request.values['username'],
+                    request.values['password']
+                )
                 if new_user:
-                    flash('New user {} successfully registered'.format(new_user.username))
+                    flash('New user {} successfully registered'.format(
+                        new_user.username))
                     remember = 'remember_me' in request.values
                     login_user(new_user, remember=remember)
                     flash('Login Successful!')
@@ -235,6 +261,7 @@ def register():
 
         return render_template('register.html', next=next)
 
+
 @app.route('/login', methods=['GET', 'POST'])
 @orm.db_session
 def login():
@@ -243,12 +270,14 @@ def login():
         return redirect(url_for('register', next=next))
     else:
         if request.method == 'POST':
-            if not request.values['username'] or not request.values['password']:
+            if (not request.values['username']
+                    or not request.values['password']):
                 flash('Username and Password are both required')
             else:
                 user = User.get(username=request.values['username'])
                 password = request.values['password']
-                if user and password and check_password_hash(user.password_hash, password):
+                if (user and password
+                        and check_password_hash(user.password_hash, password)):
                     remember = 'remember_me' in request.values
                     login_user(user, remember=remember)
                     flash('Login Successful!')
@@ -259,12 +288,14 @@ def login():
 
         return render_template('login.html', next=next)
 
+
 @app.route('/logout')
 @login_required
 def logout():
     logout_user()
     flash('You have been logged out')
     return redirect(get_redirect_target())
+
 
 @app.route('/edit_user', methods=['POST'])
 @orm.db_session
@@ -293,6 +324,7 @@ def edit_user():
 
     return redirect(next)
 
+
 @app.route('/settings')
 @orm.db_session
 @login_required
@@ -300,6 +332,7 @@ def settings():
     users = list(User.select())
     user = users[0] if users else ''
     return render_template('settings.html', user=user)
+
 
 @app.route('/')
 @orm.db_session
@@ -309,20 +342,43 @@ def display():
         page_length = list(u.page_length for u in User.select())[0]
         entity, id, page_number = parse_entity()
         if entity == 'feed' and id == -1:
-            articles = list(Article.select().order_by(orm.desc(Article.published)).page(page_number, pagesize=page_length))
+            articles = list(
+                Article.select()
+                .order_by(orm.desc(Article.published))
+                .page(page_number, pagesize=page_length)
+            )
             page_title = 'Everything'
         elif entity == 'feed' and id > -1:
             feed = Feed[id]
-            articles = list(orm.select(a for a in Article if a.feed is feed).order_by(orm.desc(Article.published)).page(page_number, pagesize=page_length))
+            articles = list(
+                orm.select(a for a in Article if a.feed is feed)
+                .order_by(orm.desc(Article.published))
+                .page(page_number, pagesize=page_length)
+            )
             page_title = feed.title
         elif entity == 'category' and id == -1:
-            articles = list(orm.select(a for a in Article if not a.feed.categories).order_by(orm.desc(Article.published)).page(page_number, pagesize=page_length))
+            articles = list(
+                orm.select(a for a in Article if not a.feed.categories)
+                .order_by(orm.desc(Article.published))
+                .page(page_number, pagesize=page_length)
+            )
             page_title = 'Uncategorized'
         elif entity == 'category' and id > -1:
             category = Category[id]
-            articles = list(orm.select(a for a in Article if a.feed in category.feeds).order_by(orm.desc(Article.published)).page(page_number, pagesize=page_length))
+            articles = list(
+                orm.select(a for a in Article if a.feed in category.feeds)
+                .order_by(orm.desc(Article.published))
+                .page(page_number, pagesize=page_length)
+            )
             page_title = category.title
-        return render_template('display.html', articles=articles, page=page_number, page_title=page_title, entity=entity, id=id)
+        return render_template(
+            'display.html',
+            articles=articles,
+            page=page_number,
+            page_title=page_title,
+            entity=entity, id=id
+        )
+
     except orm.ObjectNotFound:
         missing_entitiy()
     except ValueError:
@@ -338,7 +394,8 @@ def display():
 @orm.db_session
 @login_required
 def opml():
-    if 'action' in request.values and request.values['action'] in ['import', 'export']:
+    if ('action' in request.values
+            and request.values['action'] in ['import', 'export']):
         if request.values['action'] == 'import':
             import_file = request.files.get('file')
             if not import_file or import_file.filename == '':
@@ -375,15 +432,21 @@ def opml():
                 new_element.text = text
             body = etree.SubElement(opml, 'body')
             for feed in Feed.select():
-                new_element = etree.SubElement(body, 'outline',
+                new_element = etree.SubElement(
+                    body,
+                    'outline',
                     type='rss',
                     text=feed.title,
                     xmlUrl=feed.url,
-                    category=','.join([category.title for category in feed.categories])
+                    category=','.join(
+                        [category.title for category in feed.categories]
+                    )
                 )
-            opml_bytes = etree.tostring(opml, encoding='UTF-8', xml_declaration=True)
+            opml_bytes = etree.tostring(
+                opml, encoding='UTF-8', xml_declaration=True)
             response = make_response(opml_bytes.decode('utf-8'))
-            response.headers['Content-Disposition'] = 'attachment; filename=feedfin.opml'
+            response.headers['Content-Disposition'] = (
+                'attachment; filename=feedfin.opml')
             return response
 
     else:
@@ -402,14 +465,17 @@ def add_entity():
             p = feedparser.parse(url)
             title = p.feed.title if 'title' in p.feed else url
             new_feed = Feed(title=title, url=url)
-            [new_feed.categories.add(Category[c]) for c in list(request.values.getlist('category'))]
+            for c in list(request.values.getlist('category')):
+                new_feed.categories.add(Category[c])
     elif request.values['entity'] == 'category' and request.values['category']:
         title = request.values['category']
         if not Category.get(title=title):
             new_category = Category(title=title)
-            [new_category.feeds.add(Feed[f]) for f in list(request.values.getlist('feed'))]
+            for f in list(request.values.getlist('feed')):
+                new_category.feeds.add(Feed[f])
 
     return redirect(url_for('settings'))
+
 
 @app.route('/del')
 @orm.db_session
@@ -434,9 +500,13 @@ def del_entity():
 def del_all():
     if request.method == 'GET':
         del_feed = 'entity' not in request.values or (
-            'entity' in request.values and request.values['entity'] == 'feed')
+            'entity' in request.values
+            and request.values['entity'] == 'feed'
+        )
         del_category = 'entity' not in request.values or (
-            'entity' in request.values and request.values['entity'] == 'category')
+            'entity' in request.values
+            and request.values['entity'] == 'category'
+        )
 
         if del_feed:
             for feed in Feed.select():
@@ -452,10 +522,14 @@ def del_all():
                 prune = int(request.values['prune'])
                 if prune >= 0:
                     cutoff = datetime.utcnow() - timedelta(days=prune)
-                    articles = orm.select(a for a in Article if a.published < cutoff)
+                    articles = orm.select(
+                        a for a in Article if a.published < cutoff)
                     for article in articles:
                         article.delete()
-                    flash('Deleted All Articles Older Than {} Days'.format(prune))
+                    flash(
+                        'Deleted All Articles Older Than {} Days'
+                        .format(prune)
+                    )
                 else:
                     flash('Warning: You Must Specify 0 or More Days to Keep')
             except ValueError:
@@ -479,32 +553,49 @@ def edit_entity():
         try:
             if request.method == 'GET':
                 if request.values['entity'] == 'feed':
-                    feed=Feed[request.values['id']]
-                    other_categories = list(orm.select(c for c in Category if c not in feed.categories))
-                    return render_template('edit.html', feed=feed, other_categories=other_categories, next=next)
+                    feed = Feed[request.values['id']]
+                    other_categories = list(
+                        Category.select(lambda c: c not in feed.categories)
+                    )
+                    return render_template(
+                        'edit.html', feed=feed,
+                        other_categories=other_categories, next=next
+                    )
 
                 elif request.values['entity'] == 'category':
                     category = Category[request.values['id']]
-                    other_feeds = list(orm.select(f for f in Feed if f not in category.feeds))
-                    return render_template('edit.html', category=category, other_feeds=other_feeds, next=next)
+                    other_feeds = list(
+                        Feed.select(lambda f: f not in category.feeds)
+                    )
+                    return render_template(
+                        'edit.html', category=category,
+                        other_feeds=other_feeds, next=next
+                    )
 
-            elif request.method =='POST':
+            elif request.method == 'POST':
                 if request.values['submit'] == 'delete':
-                    return redirect(url_for('del_entity', entity=request.values['entity'], id=request.values['id']))
+                    return redirect(url_for(
+                        'del_entity', entity=request.values['entity'],
+                        id=request.values['id']
+                    ))
 
-                elif request.values['submit'] == 'save' and request.values['entity'] == 'feed':
+                elif (request.values['submit'] == 'save'
+                      and request.values['entity'] == 'feed'):
                     feed = Feed[request.values['id']]
                     feed.title = request.values['title']
                     feed.url = request.values['url']
                     feed.categories.clear()
-                    [feed.categories.add(Category[c]) for c in list(request.values.getlist('category'))]
+                    for c in list(request.values.getlist('category')):
+                        feed.categories.add(Category[c])
                     flash('Success!')
 
-                elif request.values['submit'] == 'save' and request.values['entity'] == 'category':
+                elif (request.values['submit'] == 'save'
+                      and request.values['entity'] == 'category'):
                     category = Category[request.values['id']]
                     category.title = request.values['title']
                     category.feeds.clear()
-                    [category.feeds.add(Feed[f]) for f in list(request.values.getlist('feed'))]
+                    for f in list(request.values.getlist('feed')):
+                        category.feeds.add(Feed[f])
                     flash('Success')
 
                 else:
@@ -587,11 +678,11 @@ def fetch_entity():
                 )
                 orm.commit()
 
-
     except orm.ObjectNotFound:
         missing_entitiy()
 
     return redirect(get_redirect_target())
+
 
 @app.errorhandler(404)
 @orm.db_session
@@ -599,40 +690,66 @@ def page_not_found(e):
     print(e)
     return render_template('error.html'), 404
 
+
 @app.errorhandler(500)
 @orm.db_session
 def internal_server_error(e):
     print(e)
     return render_template('error.html'), 500
 
+
 def is_safe_url(target):
     ref_url = urlparse(url_for('display', _external=True))
     test_url = urlparse(urljoin(request.host_url, target))
-    return test_url.scheme in ('http', 'https') and ref_url.netloc == test_url.netloc
+    return (test_url.scheme in ('http', 'https')
+            and ref_url.netloc == test_url.netloc)
+
 
 def get_redirect_target(default='display'):
-    for target in request.values.get('next'), request.referrer, url_for(default):
+    for target in (
+            request.values.get('next'), request.referrer, url_for(default)
+    ):
         if not target:
             continue
         if is_safe_url(target):
             return target
 
+
 def missing_entitiy():
     try:
-        flash('Warning: Could not find {} with id {}'.format(request.values['entity'], request.values['id']))
-    except (KeyError):
+        flash(
+            'Warning: Could not find {} with id {}'
+            .format(request.values['entity'], request.values['id'])
+        )
+    except KeyError:
         flash('Warning: Invalid Request Type')
+
 
 def valid_entity():
     try:
-        return int(request.values['id']) >= 0 and request.values['entity'] in ['feed', 'category']
+        return (int(request.values['id']) >= 0
+                and request.values['entity'] in ['feed', 'category'])
     except (ValueError, KeyError):
         return False
 
+
 def parse_entity():
-    entity = request.values['entity'] if 'entity' in request.values and request.values['entity'] in ['feed', 'category'] else 'feed'
-    id = int(request.values['id']) if 'id' in request.values and int(request.values['id']) >= -1 else -1
-    page_number = abs(int(request.values['page'])) if 'page' in request.values else 1
+    if ('entity' in request.values
+            and request.values['entity'] in ['feed', 'category']):
+        entity = request.values['entity']
+    else:
+        entity = 'feed'
+
+    if 'id' in request.values and int(request.values['id']) >= -1:
+        id = int(request.values['id'])
+    else:
+        id = -1
+
+    if 'page' in request.values and request.values['page'].isdigit():
+        page_number = abs(int(request.values['page']))
+    else:
+        page_number = 1
+
     return entity, id, page_number
 
 
