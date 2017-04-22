@@ -25,21 +25,20 @@ import certifi
 from PIL import Image
 
 
-db = orm.Database()
-db.bind('sqlite', 'fbdb.sqlite', create_db=True)
-app = Flask(__name__)
-app.config['SECRET_KEY'] = ('TcAnhkN0z4F2loeqVA8IHw6Hw5iU10n1bgxcigeZdk27sMR'
+DB = orm.Database()
+DB.bind('sqlite', 'fbdb.sqlite', create_db=True)
+APP = Flask(__name__)
+APP.config['SECRET_KEY'] = ('TcAnhkN0z4F2loeqVA8IHw6Hw5iU10n1bgxcigeZdk27sMR'
                             'm8oGlrw5EUENgd8vo')
-bootstrap = Bootstrap(app)
-moment = Moment(app)
-login_manager = LoginManager()
-login_manager.init_app(app)
-login_manager.login_view = 'login'
-cert_location = certifi.where()
+BOOTSTRAP = Bootstrap(APP)
+MOMENT = Moment(APP)
+LOGIN_MANAGER = LoginManager()
+LOGIN_MANAGER.init_app(APP)
+LOGIN_MANAGER.login_view = 'login'
+CERT_LOCATION = certifi.where()
 
 
-class Feed(db.Entity):
-    id = orm.PrimaryKey(int, auto=True)
+class Feed(DB.Entity):
     articles = orm.Set('Article')
     categories = orm.Set('Category')
     title = orm.Required(str)
@@ -48,8 +47,7 @@ class Feed(db.Entity):
     modified = orm.Optional(str)
 
 
-class Article(db.Entity):
-    id = orm.PrimaryKey(int, auto=True)
+class Article(DB.Entity):
     feed = orm.Required('Feed')
     author = orm.Optional(str)
     title = orm.Required(str)
@@ -64,31 +62,18 @@ class Article(db.Entity):
             os.remove(os.path.abspath('static/' + self.image))
 
 
-class Category(db.Entity):
-    id = orm.PrimaryKey(int, auto=True)
+class Category(DB.Entity):
     title = orm.Required(str, unique=True)
     feeds = orm.Set('Feed')
 
 
-class User(UserMixin, db.Entity):
-    id = orm.PrimaryKey(int, auto=True)
+class User(UserMixin, DB.Entity):
     username = orm.Required(str, unique=True)
     password_hash = orm.Required(str, unique=True)
     page_length = orm.Required(int, default=50)
 
 
-db.generate_mapping(create_tables=True)
-
-
-@orm.db_session
-def add_category(title):
-    exists = Category.get(title=title)
-    if exists:
-        return exists.id
-    else:
-        new_category = Category(title=title)
-        orm.commit()
-        return new_category.id
+DB.generate_mapping(create_tables=True)
 
 
 def fetch_feed(url, feed_id, etag='', modified=''):
@@ -178,7 +163,7 @@ def find_image(entry):
                 parent_url = parent.scheme + '://' + parent.netloc
                 image = urljoin(parent_url, parts.path)
 
-            download = requests.get(image, verify=cert_location)
+            download = requests.get(image, verify=CERT_LOCATION)
             if allowed_file_type(download.headers.get('content-type')):
                 file_id = str(uuid.uuid4())
                 file_ext = urlparse(image).path.rsplit('.', 1)[1]
@@ -210,7 +195,7 @@ def parse_image(html):
     return ''
 
 
-@login_manager.user_loader
+@LOGIN_MANAGER.user_loader
 @orm.db_session
 def load_user(user_id):
     return User.get(id=user_id)
@@ -228,7 +213,7 @@ def add_user(username, password):
         return new_user
 
 
-@app.context_processor
+@APP.context_processor
 @orm.db_session
 def nav_variables():
     feeds = list(Feed.select().order_by(Feed.title))
@@ -243,7 +228,7 @@ def nav_variables():
     )
 
 
-@app.route('/register', methods=['GET', 'POST'])
+@APP.route('/register', methods=['GET', 'POST'])
 @orm.db_session
 def register():
     next = get_redirect_target()
@@ -272,7 +257,7 @@ def register():
         return render_template('register.html', next=next)
 
 
-@app.route('/login', methods=['GET', 'POST'])
+@APP.route('/login', methods=['GET', 'POST'])
 @orm.db_session
 def login():
     next = get_redirect_target()
@@ -299,7 +284,7 @@ def login():
         return render_template('login.html', next=next)
 
 
-@app.route('/logout')
+@APP.route('/logout')
 @login_required
 def logout():
     logout_user()
@@ -307,7 +292,7 @@ def logout():
     return redirect(get_redirect_target())
 
 
-@app.route('/edit_user', methods=['POST'])
+@APP.route('/edit_user', methods=['POST'])
 @orm.db_session
 @login_required
 def edit_user():
@@ -335,7 +320,7 @@ def edit_user():
     return redirect(next)
 
 
-@app.route('/settings')
+@APP.route('/settings')
 @orm.db_session
 @login_required
 def settings():
@@ -344,7 +329,7 @@ def settings():
     return render_template('settings.html', user=user)
 
 
-@app.route('/')
+@APP.route('/')
 @orm.db_session
 @login_required
 def display():
@@ -400,7 +385,7 @@ def display():
     return redirect(get_redirect_target())
 
 
-@app.route('/opml', methods=['POST'])
+@APP.route('/opml', methods=['POST'])
 @orm.db_session
 @login_required
 def opml():
@@ -418,8 +403,11 @@ def opml():
                         if 'title' in feed and feed['title']:
                             title = feed['title']
                         else:
-                            p = feedparser.parse(url)
-                            title = p.feed.title if 'title' in p.feed else url
+                            parse = feedparser.parse(url)
+                            if 'title' in parse.feed:
+                                title = parse.feed.title
+                            else:
+                                title = url
                         new_feed = Feed(title=title, url=url)
                         for category_list in feed['categories']:
                             for title in category_list:
@@ -430,8 +418,8 @@ def opml():
                                     new_feed.categories.add(category)
                 flash('Feeds Imported!')
         elif request.values['action'] == 'export':
-            opml = etree.Element('opml', version='2.0')
-            head = etree.SubElement(opml, 'head')
+            root = etree.Element('opml', version='2.0')
+            head = etree.SubElement(root, 'head')
             head_elements = {
                 'title': 'feedfin OPML export',
                 'dateCreated': format_datetime(datetime.utcnow()),
@@ -440,7 +428,7 @@ def opml():
             for element, text in head_elements.items():
                 new_element = etree.SubElement(head, element)
                 new_element.text = text
-            body = etree.SubElement(opml, 'body')
+            body = etree.SubElement(root, 'body')
             for feed in Feed.select():
                 new_element = etree.SubElement(
                     body,
@@ -453,7 +441,7 @@ def opml():
                     )
                 )
             opml_bytes = etree.tostring(
-                opml, encoding='UTF-8', xml_declaration=True)
+                root, encoding='UTF-8', xml_declaration=True)
             response = make_response(opml_bytes.decode('utf-8'))
             response.headers['Content-Disposition'] = (
                 'attachment; filename=feedfin.opml')
@@ -465,29 +453,29 @@ def opml():
     return redirect(get_redirect_target())
 
 
-@app.route('/add', methods=['POST'])
+@APP.route('/add', methods=['POST'])
 @orm.db_session
 @login_required
 def add_entity():
     if request.values['entity'] == 'feed' and request.values['url']:
         url = request.values['url']
         if not Feed.get(url=url):
-            p = feedparser.parse(url)
-            title = p.feed.title if 'title' in p.feed else url
+            parse = feedparser.parse(url)
+            title = parse.feed.title if 'title' in parse.feed else url
             new_feed = Feed(title=title, url=url)
-            for c in list(request.values.getlist('category')):
-                new_feed.categories.add(Category[c])
+            for category_id in list(request.values.getlist('category')):
+                new_feed.categories.add(Category[category_id])
     elif request.values['entity'] == 'category' and request.values['category']:
         title = request.values['category']
         if not Category.get(title=title):
             new_category = Category(title=title)
-            for f in list(request.values.getlist('feed')):
-                new_category.feeds.add(Feed[f])
+            for feed_id in list(request.values.getlist('feed')):
+                new_category.feeds.add(Feed[feed_id])
 
     return redirect(url_for('settings'))
 
 
-@app.route('/del')
+@APP.route('/del')
 @orm.db_session
 @login_required
 def del_entity():
@@ -504,7 +492,7 @@ def del_entity():
     return redirect(url_for('settings'))
 
 
-@app.route('/del_all', methods=['POST', 'GET'])
+@APP.route('/del_all', methods=['POST', 'GET'])
 @orm.db_session
 @login_required
 def del_all():
@@ -550,7 +538,7 @@ def del_all():
     return redirect(get_redirect_target())
 
 
-@app.route('/edit', methods=['POST', 'GET'])
+@APP.route('/edit', methods=['POST', 'GET'])
 @orm.db_session
 @login_required
 def edit_entity():
@@ -595,8 +583,8 @@ def edit_entity():
                     feed.title = request.values['title']
                     feed.url = request.values['url']
                     feed.categories.clear()
-                    for c in list(request.values.getlist('category')):
-                        feed.categories.add(Category[c])
+                    for cat_id in list(request.values.getlist('category')):
+                        feed.categories.add(Category[cat_id])
                     flash('Success!')
 
                 elif (request.values['submit'] == 'save'
@@ -604,8 +592,8 @@ def edit_entity():
                     category = Category[request.values['id']]
                     category.title = request.values['title']
                     category.feeds.clear()
-                    for f in list(request.values.getlist('feed')):
-                        category.feeds.add(Feed[f])
+                    for feed_id in list(request.values.getlist('feed')):
+                        category.feeds.add(Feed[feed_id])
                     flash('Success')
 
                 else:
@@ -617,7 +605,7 @@ def edit_entity():
     return redirect(next)
 
 
-@app.route('/fetch')
+@APP.route('/fetch')
 @orm.db_session
 @login_required
 def fetch_entity():
@@ -628,7 +616,7 @@ def fetch_entity():
         elif entity == 'feed' and id > -1:
             feeds = [Feed[id]]
         elif entity == 'category' and id == -1:
-            feeds = list(orm.select(f for f in Feed if not f.categories))
+            feeds = list(Feed.select(lambda feed: not feed.categories))
         elif entity == 'category' and id > -1:
             feeds = list(Category[id].feeds)
         else:
@@ -694,14 +682,14 @@ def fetch_entity():
     return redirect(get_redirect_target())
 
 
-@app.errorhandler(404)
+@APP.errorhandler(404)
 @orm.db_session
 def page_not_found(e):
     print(e)
     return render_template('error.html'), 404
 
 
-@app.errorhandler(500)
+@APP.errorhandler(500)
 @orm.db_session
 def internal_server_error(e):
     print(e)
