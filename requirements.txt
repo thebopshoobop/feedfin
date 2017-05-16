@@ -12,7 +12,7 @@ feedparser==5.2.1
 flask-bootstrap==3.3.7.1
 flask-login==0.4.0
 flask-moment==0.5.1
-flask==0.12.1
+flask==0.12.2
 gunicorn==19.7.1
 itsdangerous==0.24        # via flask
 jinja2==2.9.6             # via flask
