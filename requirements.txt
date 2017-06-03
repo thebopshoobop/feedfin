@@ -19,7 +19,7 @@ idna==2.5                 # via requests
 itsdangerous==0.24        # via flask
 jinja2==2.9.6             # via flask
 listparser==0.18
-lxml==3.7.3
+lxml==3.8.0
 markupsafe==1.0           # via jinja2
 pony==0.7.1
 requests==2.16.5
