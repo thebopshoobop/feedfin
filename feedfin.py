@@ -28,8 +28,7 @@ from PIL import Image
 DB = orm.Database()
 DB.bind('sqlite', 'fbdb.sqlite', create_db=True)
 APP = Flask(__name__)
-APP.config['SECRET_KEY'] = ('TcAnhkN0z4F2loeqVA8IHw6Hw5iU10n1bgxcigeZdk27sMR'
-                            'm8oGlrw5EUENgd8vo')
+APP.config['SECRET_KEY'] = ('replace this with a long random string!')
 BOOTSTRAP = Bootstrap(APP)
 MOMENT = Moment(APP)
 LOGIN_MANAGER = LoginManager()
