@@ -2,6 +2,7 @@
 
 import uuid
 import os
+import errno
 from datetime import datetime, timedelta
 from io import BytesIO
 from concurrent.futures import ProcessPoolExecutor, as_completed
@@ -24,6 +25,13 @@ from bs4 import BeautifulSoup, Comment, Doctype
 import certifi
 from PIL import Image
 
+# Ensure that the image directory exists
+if not os.path.exists("static/img"):
+    try:
+        os.makedirs("static/img")
+    except OSError as e:
+        if e.errno != errno.EEXIST:
+            raise
 
 DB = orm.Database()
 DB.bind('sqlite', 'fbdb.sqlite', create_db=True)
@@ -622,7 +630,7 @@ def fetch_entity():
             feeds = []
             flash('Warning: Failed Fetch')
 
-        with ProcessPoolExecutor(max_workers=os.cpu_count()*2) as executor:
+        with ProcessPoolExecutor(max_workers=os.cpu_count() * 2) as executor:
             fetched = []
             for feed in feeds:
                 fetched.append(executor.submit(fetch_feed, feed.url, feed.id))
