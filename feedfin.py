@@ -66,7 +66,10 @@ class Article(DB.Entity):
 
     def before_delete(self):
         if self.image:
-            os.remove(os.path.abspath('static/' + self.image))
+            try:
+                os.remove(os.path.abspath('static/' + self.image))
+            except FileNotFoundError:
+                pass
 
 
 class Category(DB.Entity):
@@ -83,20 +86,64 @@ class User(UserMixin, DB.Entity):
 DB.generate_mapping(create_tables=True)
 
 
+def get_parsed_feeds(executor, fetched):
+    parsed = []
+    try:
+        titles = []
+        for fetch in as_completed(fetched, 3):
+            results = fetch.result()
+            feed = Feed[results['id']]
+            titles.append(feed.title)
+            if ((results['modified'] and feed.modified == results['modified'])
+                    or (results['etag'] and feed.etag == results['etag'])):
+                continue
+            else:
+                feed.modified = results['modified']
+                feed.etag = results['etag']
+                for entry in results['entries']:
+                    if 'link' not in entry:
+                        continue
+                    url = entry['link']
+
+                    if 'published_parsed' in entry:
+                        published = datetime(*entry.published_parsed[:6])
+                    else:
+                        published = datetime.utcnow()
+
+                    article = Article.get(url=url)
+                    if article and article.published == published:
+                        continue
+                    else:
+                        if article:
+                            article.delete()
+                        parsed.append(
+                            executor.submit(
+                                parse_entry, entry, results['id'], url,
+                                published
+                            )
+                        )
+    except TimeoutError:
+        pass
+
+    return parsed
+
+
 def fetch_feed(url, feed_id, etag='', modified=''):
     parsed = feedparser.parse(url, etag=etag, modified=modified)
     return {
         'id': feed_id,
-        'etag': parsed.etag if 'etag' in parsed else '',
-        'modified': parsed.modified if 'modified' in parsed else '',
-        'entries': parsed.entries if 'entries' in parsed else []
+        'etag': parsed.get('etag', ''),
+        'modified': parsed.get('modified', ''),
+        'entries': parsed.get('entries', [])
     }
 
 
 def parse_entry(entry, feed_id, url, published):
-    author = entry['author'].title() if 'author' in entry else ''
-    title = entry.title if 'title' in entry else ''
-    summary = strip_summary(entry.summary) if 'summary' in entry else ''
+    author = entry.get('author', '').title()
+    title = entry.get('title', '')
+    summary = entry.get('summary', '')
+    if summary:
+        summary = strip_summary(summary)
     image = find_image(entry)
 
     return {
@@ -635,53 +682,21 @@ def fetch_entity():
             for feed in feeds:
                 fetched.append(executor.submit(fetch_feed, feed.url, feed.id))
 
-            parsed = []
-            for fetch in as_completed(fetched):
-                results = fetch.result()
-                feed = Feed[results['id']]
-                if ((results['modified']
-                     and feed.modified == results['modified'])
-                        or (results['etag']
-                            and feed.etag == results['etag'])):
-                    continue
-                else:
-                    feed.modified = results['modified']
-                    feed.etag = results['etag']
-                    for entry in results['entries']:
-                        if 'link' not in entry:
-                            continue
-                        url = entry['link']
+            parsed = get_parsed_feeds(executor, fetched)
 
-                        if 'published_parsed' in entry:
-                            published = datetime(*entry.published_parsed[:6])
-                        else:
-                            published = datetime.utcnow()
-
-                        article = Article.get(url=url)
-                        if article and article.published == published:
-                            continue
-                        else:
-                            if article:
-                                article.delete()
-                            parsed.append(
-                                executor.submit(
-                                    parse_entry, entry, results['id'], url,
-                                    published
-                                )
-                            )
-
-            for entry in as_completed(parsed):
-                art = entry.result()
-                new_article = Article(
-                    feed=Feed[art['id']],
-                    author=art['author'],
-                    title=art['title'],
-                    url=art['url'],
-                    published=art['published'],
-                    summary=art['summary'],
-                    image=art['image']
-                )
-                orm.commit()
+        new_entries = []
+        for entry in as_completed(parsed):
+            art = entry.result()
+            new_entries.append(Article(
+                feed=Feed[art['id']],
+                author=art['author'],
+                title=art['title'],
+                url=art['url'],
+                published=art['published'],
+                summary=art['summary'],
+                image=art['image']
+            ))
+        orm.commit()
 
     except orm.ObjectNotFound:
         missing_entitiy()
