@@ -5,7 +5,7 @@ import os
 import errno
 from datetime import datetime, timedelta
 from io import BytesIO
-from concurrent.futures import ProcessPoolExecutor, as_completed
+from concurrent.futures import ProcessPoolExecutor, as_completed, TimeoutError
 from email.utils import format_datetime
 from urllib.parse import urlparse, urljoin
 
