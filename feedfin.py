@@ -89,11 +89,9 @@ DB.generate_mapping(create_tables=True)
 def get_parsed_feeds(executor, fetched):
     parsed = []
     try:
-        titles = []
         for fetch in as_completed(fetched, 3):
             results = fetch.result()
             feed = Feed[results['id']]
-            titles.append(feed.title)
             if ((results['modified'] and feed.modified == results['modified'])
                     or (results['etag'] and feed.etag == results['etag'])):
                 continue
@@ -685,7 +683,7 @@ def fetch_entity():
             parsed = get_parsed_feeds(executor, fetched)
 
         new_entries = []
-        for entry in as_completed(parsed):
+        for entry in as_completed(parsed, 3):
             art = entry.result()
             new_entries.append(Article(
                 feed=Feed[art['id']],
@@ -696,11 +694,13 @@ def fetch_entity():
                 summary=art['summary'],
                 image=art['image']
             ))
-        orm.commit()
 
     except orm.ObjectNotFound:
         missing_entitiy()
+    except TimeoutError:
+        pass
 
+    orm.commit()
     return redirect(get_redirect_target())
 
 
