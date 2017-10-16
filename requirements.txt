@@ -12,14 +12,14 @@ dominate==2.3.1           # via flask-bootstrap
 feedparser==5.2.1
 flask-bootstrap==3.3.7.1
 flask-login==0.4.0
-flask-moment==0.5.1
+flask-moment==0.5.2
 flask==0.12.2
 gunicorn==19.7.1
 idna==2.6                 # via requests
 itsdangerous==0.24        # via flask
 jinja2==2.9.6             # via flask
 listparser==0.18
-lxml==4.0.0
+lxml==4.1.0
 markupsafe==1.0           # via jinja2
 pony==0.7.2
 requests==2.18.4
