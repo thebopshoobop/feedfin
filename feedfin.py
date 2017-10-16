@@ -86,57 +86,61 @@ class User(UserMixin, DB.Entity):
 DB.generate_mapping(create_tables=True)
 
 
-def get_parsed_feeds(executor, fetched):
-    parsed = []
-    try:
-        for fetch in as_completed(fetched, 3):
-            results = fetch.result()
-            feed = Feed[results['id']]
-            if ((results['modified'] and feed.modified == results['modified'])
-                    or (results['etag'] and feed.etag == results['etag'])):
-                continue
-            else:
-                feed.modified = results['modified']
-                feed.etag = results['etag']
-                for entry in results['entries']:
-                    if 'link' not in entry:
-                        continue
-                    url = entry['link']
-
-                    if 'published_parsed' in entry:
-                        published = datetime(*entry.published_parsed[:6])
-                    else:
-                        published = datetime.utcnow()
-
-                    article = Article.get(url=url)
-                    if article and article.published == published:
-                        continue
-                    else:
-                        if article:
-                            article.delete()
-                        parsed.append(
-                            executor.submit(
-                                parse_entry, entry, results['id'], url,
-                                published
-                            )
-                        )
-    except TimeoutError:
-        pass
-
-    return parsed
-
-
-def fetch_feed(url, feed_id, etag='', modified=''):
-    parsed = feedparser.parse(url, etag=etag, modified=modified)
+def fetch_feed(feed):
+    parsed = feedparser.parse(feed.url, etag=feed.etag, modified=feed.modified)
     return {
-        'id': feed_id,
+        'id': feed.id,
         'etag': parsed.get('etag', ''),
         'modified': parsed.get('modified', ''),
         'entries': parsed.get('entries', [])
     }
 
 
-def parse_entry(entry, feed_id, url, published):
+def get_parsed_entries(fetched):
+    entries = []
+    try:
+        for results in fetched:
+            feed = Feed[results['id']]
+            if ((results['modified'] and feed.modified == results['modified'])
+                    or (results['etag'] and feed.etag == results['etag'])):
+                continue
+
+            feed.modified = results['modified']
+            feed.etag = results['etag']
+
+            entries.extend(parse_entries(results['entries'], results['id']))
+
+    except TimeoutError:
+        pass
+
+    return entries
+
+
+def parse_entries(feed, feed_id):
+    entries = []
+    for entry in feed:
+        if 'link' not in entry:
+            continue
+
+        url = entry['link']
+        article = Article.get(url=url)
+        published = entry.get('published_parsed')
+        published = datetime(
+            *published[:6]) if published else datetime.utcnow()
+
+        if article and article.published == published:
+            continue
+
+        if article:
+            article.delete()
+
+        entries.append((entry, feed_id, url, published))
+
+    return entries
+
+
+def parse_entry(details):
+    entry, feed_id, url, published = details
     author = entry.get('author', '').title()
     title = entry.get('title', '')
     summary = entry.get('summary', '')
@@ -427,7 +431,7 @@ def display():
         )
 
     except orm.ObjectNotFound:
-        missing_entitiy()
+        missing_entity()
     except ValueError:
         flash('Warning: Invalid Request')
 
@@ -539,7 +543,7 @@ def del_entity():
                 Category[request.values['id']].delete()
             flash('Sucess!')
         except orm.ObjectNotFound:
-            missing_entitiy()
+            missing_entity()
 
     return redirect(url_for('settings'))
 
@@ -652,7 +656,7 @@ def edit_entity():
                     flash('Warning: Improper Edit Submission')
 
         except orm.ObjectNotFound:
-            missing_entitiy()
+            missing_entity()
 
     return redirect(next)
 
@@ -675,16 +679,12 @@ def fetch_entity():
             feeds = []
             flash('Warning: Failed Fetch')
 
-        with ProcessPoolExecutor(max_workers=os.cpu_count() * 2) as executor:
-            fetched = []
-            for feed in feeds:
-                fetched.append(executor.submit(fetch_feed, feed.url, feed.id))
-
-            parsed = get_parsed_feeds(executor, fetched)
-
+        executor = ProcessPoolExecutor(max_workers=os.cpu_count() * 2)
+        fetched = executor.map(fetch_feed, feeds, timeout=3)
+        entries = get_parsed_entries(fetched)
+        parsed = executor.map(parse_entry, entries, timeout=3)
         new_entries = []
-        for entry in as_completed(parsed, 3):
-            art = entry.result()
+        for art in parsed:
             new_entries.append(Article(
                 feed=Feed[art['id']],
                 author=art['author'],
@@ -694,9 +694,10 @@ def fetch_entity():
                 summary=art['summary'],
                 image=art['image']
             ))
+        executor.shutdown(wait=False)
 
     except orm.ObjectNotFound:
-        missing_entitiy()
+        missing_entity()
     except TimeoutError:
         pass
 
@@ -735,7 +736,7 @@ def get_redirect_target(default='display'):
             return target
 
 
-def missing_entitiy():
+def missing_entity():
     try:
         flash(
             'Warning: Could not find {} with id {}'
