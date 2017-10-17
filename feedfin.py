@@ -99,7 +99,8 @@ def fetch_feed(feed):
 def get_parsed_entries(fetched):
     entries = []
     try:
-        for results in fetched:
+        for future in as_completed(fetched, timeout=3):
+            results = future.result()
             feed = Feed[results['id']]
             if ((results['modified'] and feed.modified == results['modified'])
                     or (results['etag'] and feed.etag == results['etag'])):
@@ -680,11 +681,12 @@ def fetch_entity():
             flash('Warning: Failed Fetch')
 
         executor = ProcessPoolExecutor(max_workers=os.cpu_count() * 2)
-        fetched = executor.map(fetch_feed, feeds, timeout=3)
+        fetched = [executor.submit(fetch_feed, feed) for feed in feeds]
         entries = get_parsed_entries(fetched)
-        parsed = executor.map(parse_entry, entries, timeout=3)
+        parsed = [executor.submit(parse_entry, entry) for entry in entries]
         new_entries = []
-        for art in parsed:
+        for future in as_completed(parsed, timeout=3):
+            art = future.result()
             new_entries.append(Article(
                 feed=Feed[art['id']],
                 author=art['author'],
