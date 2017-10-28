@@ -1,4 +1,7 @@
 # feedfin
+
+![feedfin!](https://i.imgur.com/TTexDTw.png)
+
 feedfin is a simple feed agregator that I'm building in [Python 3](https://www.python.org/) with [Flask](http://flask.pocoo.org/), [Pony](https://ponyorm.com/), and [Bootstrap](http://getbootstrap.com/). It still needs tons of work, but it's at least minimally functional... Give it a spin?
 
 ### Installing
