@@ -17,7 +17,7 @@ flask==0.12.2
 gunicorn==19.7.1
 idna==2.6                 # via requests
 itsdangerous==0.24        # via flask
-jinja2==2.9.6             # via flask
+jinja2==3.0.2             # via flask
 listparser==0.18
 lxml==4.1.0
 markupsafe==1.0           # via jinja2
