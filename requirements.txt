@@ -12,7 +12,7 @@ dominate==2.3.1           # via flask-bootstrap
 feedparser==5.2.1
 flask-bootstrap==3.3.7.1
 flask-login==0.4.0
-flask-moment==0.5.2
+flask-moment==1.0.3
 flask==0.12.2
 gunicorn==19.7.1
 idna==2.6                 # via requests
