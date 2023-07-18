@@ -14,7 +14,7 @@ flask-bootstrap==3.3.7.1
 flask-login==0.4.0
 flask-moment==0.5.2
 flask==0.12.2
-gunicorn==19.7.1
+gunicorn==21.0.1
 idna==2.6                 # via requests
 itsdangerous==0.24        # via flask
 jinja2==2.9.6             # via flask
